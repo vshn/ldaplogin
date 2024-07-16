@@ -8,3 +8,4 @@ target
 /.settings
 /RUNNING_PID
 /env
+simulate.sh
