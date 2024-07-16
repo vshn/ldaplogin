@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- https://www.playframework.com/documentation/latest/SettingsLogger -->
+
+<!DOCTYPE configuration>
+
+<configuration>
+  <import class="ch.qos.logback.classic.encoder.PatternLayoutEncoder"/>
+  <import class="ch.qos.logback.classic.AsyncAppender"/>
+  <import class="ch.qos.logback.core.FileAppender"/>
+  <import class="ch.qos.logback.core.ConsoleAppender"/>
+
+  <appender name="STDOUT" class="ConsoleAppender">
+    <encoder class="PatternLayoutEncoder">
+      <charset>UTF-8</charset>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan(%logger{36}) %magenta(%X{pekkoSource}) %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="ASYNCSTDOUT" class="AsyncAppender">
+    <appender-ref ref="STDOUT"/>
+  </appender>
+
+  <logger name="play" level="INFO"/>
+  <logger name="application" level="INFO"/>
+  <logger name="controllers" level="INFO"/>
+  <logger name="services" level="INFO"/>
+  <logger name="store" level="INFO"/>
+  <!-- Hide some useless warnings during schema setup -->
+  <logger name="org.apache.directory.api.ldap.model.entry.DefaultAttribute" level="ERROR"/>
+  <!-- Hide some useless warnings about configuration files during MongoDB connection setup -->
+  <logger name="dev.morphia.sofia.Sofia" level="ERROR"/>
+  <!-- Hide useless warning about admin's default password because we delete the admin account before starting the LDAP service -->
+  <logger name="org.apache.directory.server.core.DefaultDirectoryService" level="ERROR"/>
+
+  <root level="WARN">
+    <appender-ref ref="ASYNCSTDOUT"/>
+  </root>
+</configuration>

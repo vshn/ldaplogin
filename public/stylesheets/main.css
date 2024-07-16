@@ -1,0 +1,29 @@
+body {
+    padding: 10px;
+    text-align: center;
+    background-color: white;
+    font-family: Arial, sans-serif;
+    color: #555555;
+}
+
+h1 {
+    margin-top: 20px;
+}
+
+div.hint {
+    display: inline-block;
+    max-width: 350px;
+}
+
+a, a:hover {
+    font-size: 20px;
+    color: #5555ff;
+    text-decoration: none;
+    background-color: #eeeeee;
+    padding: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-top: 20px;
+    display: inline-block;
+    border: solid 1px #cccccc;
+}

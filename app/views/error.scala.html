@@ -1,0 +1,10 @@
+@(  request: Http.RequestHeader,
+    code: Integer,
+    text: String,
+    message: String
+)
+
+@main("" + code + ": " + text) {
+  <h1>@code: @text</h1>
+  <p>@message</p>
+}
