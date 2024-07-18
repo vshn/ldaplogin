@@ -1,5 +1,5 @@
 # Builder image
-FROM ubuntu:22.04 AS base
+FROM ubuntu:24.04 AS base
 
 ARG CI_COMMIT_REF_NAME=Unreleased
 ARG CI_COMMIT_SHA=#
@@ -32,7 +32,7 @@ RUN sbt test
 RUN sbt stage
 
 # Runtime image
-FROM ubuntu:22.04 AS runtime
+FROM ubuntu:24.04 AS runtime
 RUN apt-get update > /dev/null && apt-get --no-install-recommends install openjdk-17-jdk -y > /dev/null && rm -rf /var/lib/apt/lists/*
 COPY --from=build /src/target/universal/stage/ /opt/
 
