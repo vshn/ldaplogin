@@ -8,7 +8,7 @@ Compile/packageDoc/publishArtifact := false
 
 lazy val root = (project in file(".")).enablePlugins(PlayJava)
 
-scalaVersion := "2.13.13"
+scalaVersion := "2.13.14"
 
 libraryDependencies += guice
 libraryDependencies += "org.apache.directory.server" % "apacheds-protocol-ldap" % "2.0.0.AM27"
