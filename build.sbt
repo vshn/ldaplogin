@@ -28,4 +28,4 @@ libraryDependencies += "com.google.oauth-client" % "google-oauth-client-jetty" %
 
 // MongoDB/Morphia
 libraryDependencies += "org.mongodb" % "mongodb-driver-sync" % "4.11.2"
-libraryDependencies += "dev.morphia.morphia" % "morphia-core" % "2.4.11"
+libraryDependencies += "dev.morphia.morphia" % "morphia-core" % "2.4.14"
