@@ -19,7 +19,7 @@ libraryDependencies += "org.apache.directory.server" % "apacheds-protocol-shared
 libraryDependencies += "org.apache.directory.server" % "apacheds-server-config" % "2.0.0.AM27"
 libraryDependencies += "org.apache.directory.server" % "apacheds-service-builder" % "2.0.0.AM27"
 libraryDependencies += "org.apache.directory.api" % "api-ldap-net-mina" % "2.1.6"
-libraryDependencies += "org.apache.directory.api" % "api-ldap-codec-standalone" % "2.1.6"
+libraryDependencies += "org.apache.directory.api" % "api-ldap-codec-standalone" % "2.1.7"
 
 // OAuth
 libraryDependencies += "com.google.oauth-client" % "google-oauth-client-java6" % "1.36.0"
