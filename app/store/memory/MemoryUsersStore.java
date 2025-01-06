@@ -5,8 +5,11 @@ import com.google.api.client.auth.oauth2.CredentialRefreshListener;
 import com.google.api.client.auth.oauth2.TokenErrorResponse;
 import com.google.api.client.auth.oauth2.TokenResponse;
 import entities.OpenIdUser;
+import entities.Service;
 import entities.User;
 import entities.UserSession;
+import entities.memory.MemoryDynamicPassword;
+import entities.memory.MemoryServicePasswords;
 import entities.memory.MemoryUser;
 import entities.memory.MemoryUserSession;
 import org.apache.directory.api.ldap.model.constants.LdapSecurityConstants;
@@ -102,9 +105,16 @@ public class MemoryUsersStore implements UsersStore {
     @Override
     public boolean update(User user, OpenIdUser openIdUser) {
         MemoryUser memoryUser = (MemoryUser)user;
+
+        String fromUserEmail = openIdUser.isEmailVerified() ? openIdUser.getEmail() : memoryUser.getEmail();
+
         boolean updated = false;
-        if (!Objects.equals(memoryUser.getEmail(), openIdUser.getEmail())) {
-            memoryUser.setEmail(openIdUser.getEmail());
+        if (!Objects.equals(memoryUser.getEmail(), fromUserEmail)) {
+            memoryUser.setEmail(fromUserEmail);
+            updated = true;
+        }
+        if (!Objects.equals(memoryUser.getEmailQuota(), openIdUser.getEmailQuota())) {
+            memoryUser.setEmailQuota(openIdUser.getEmailQuota());
             updated = true;
         }
         if (memoryUser.isEmailVerified() != openIdUser.isEmailVerified()) {
@@ -132,13 +142,6 @@ public class MemoryUsersStore implements UsersStore {
     }
 
     @Override
-    public List<User> getAll() {
-        List<User> usersList = new ArrayList<>(users);
-        Collections.sort(usersList, Comparator.comparing(User::getUid));
-        return usersList;
-    }
-
-    @Override
     public UserSession createSession(User user, String id, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
         MemoryUser memoryUser = (MemoryUser)user;
         MemoryUserSession session = new MemoryUserSession(id, openIdIdentityToken, openIdAccessToken, openIdRefreshToken, openIdTokenExpiry);
@@ -152,10 +155,40 @@ public class MemoryUsersStore implements UsersStore {
     }
 
     @Override
-    public String generatePassword(User user) {
+    public String generateDynamicPassword(User user, Service service) {
         MemoryUser memoryUser = (MemoryUser)user;
         String password = IdGenerator.generateSessionId();
-        memoryUser.setPasswordHash(PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512));
+        byte[] passwordHash = PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512);
+
+        MemoryDynamicPassword dynamicPassword = new MemoryDynamicPassword(passwordHash);
+
+        MemoryServicePasswords servicePasswords = (MemoryServicePasswords)memoryUser.getServicePasswords(service.getId());
+        if (servicePasswords == null) {
+            servicePasswords = new MemoryServicePasswords();
+            servicePasswords.addDynamicPassword(dynamicPassword);
+            memoryUser.setServicePasswords(service.getId(), servicePasswords);
+        } else {
+            servicePasswords.addDynamicPassword(dynamicPassword);
+        }
+
+        return password;
+    }
+
+    @Override
+    public String generateStaticPassword(User user, Service service) {
+        MemoryUser memoryUser = (MemoryUser)user;
+        String password = IdGenerator.generateSessionId();
+        byte[] passwordHash = PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512);
+
+        MemoryServicePasswords servicePasswords = (MemoryServicePasswords)memoryUser.getServicePasswords(service.getId());
+        if (servicePasswords == null) {
+            servicePasswords = new MemoryServicePasswords();
+            servicePasswords.setStaticPwHash(passwordHash);
+            memoryUser.setServicePasswords(service.getId(), servicePasswords);
+        } else {
+            servicePasswords.setStaticPwHash(passwordHash);
+        }
+
         return password;
     }
 

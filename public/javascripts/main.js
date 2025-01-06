@@ -9,22 +9,85 @@ function getCsrfToken() {
     return "";
 }
 
+
 document.addEventListener("DOMContentLoaded", function(event) {
-    var services = document.getElementsByTagName("a");
-    for (let i = 0; i < services.length; i++) {
-        services[i].onclick = function(event) {
+    var serviceLinks = document.getElementsByTagName("a");
+    for (let i = 0; i < serviceLinks.length; i++) {
+        serviceLinks[i].onclick = function(event) {
             formData = new FormData();
             formData.append("csrfToken", getCsrfToken());
-            formData.append("serviceId", event.target.id);
+            formData.append("serviceId", event.target.parentElement.parentElement.id);
             let options = {
                 method: 'POST',
                 body: new URLSearchParams(formData)
             };
-            fetch ('/pwgen', options)
+            fetch ('/dynamicPwGen', options)
             .then(response => response.json())
             .then(body => {
                 navigator.clipboard.writeText(body.pw);
                 window.location.href=event.target.href;
+            }).catch(error => {
+                console.log(error);
+            });
+            return false;
+        }
+    }
+
+    var staticPassButtons = document.getElementsByClassName("static-password");
+    for (let i = 0; i < staticPassButtons.length; i++) {
+        staticPassButtons[i].onclick = function(event) {
+            event.target.style.display="none";
+            var serviceId = event.target.parentElement.id;
+            var currentStaticPassword = event.target.parentElement.getElementsByClassName("current-static-password")[0];
+            var generateStaticPassword = event.target.parentElement.getElementsByClassName("generate-static-password")[0]
+            if (localStorage.getItem("static-password-" + serviceId)) {
+                currentStaticPassword.innerHTML = localStorage.getItem("static-password-" + serviceId);
+            }
+            currentStaticPassword.style.display="block";
+            generateStaticPassword.style.display="block";
+        }
+    }
+
+    var generatePassButton = document.getElementsByClassName("generate-static-password-link");
+    for (let i = 0; i < generatePassButton.length; i++) {
+        generatePassButton[i].onclick = function(event) {
+            var elements = event.target.parentElement.parentElement.getElementsByClassName("generate-static-password-confirm");
+            elements[0].style.display="block";
+            elements[1].style.display="block";
+            return false;
+        }
+    }
+
+    var noGeneratePassButton = document.getElementsByClassName("generate-static-password-confirm-no");
+    for (let i = 0; i < noGeneratePassButton.length; i++) {
+        noGeneratePassButton[i].onclick = function(event) {
+            var elements = event.target.parentElement.parentElement.getElementsByClassName("generate-static-password-confirm");
+            elements[0].style.display="none";
+            elements[1].style.display="none";
+            return false;
+        }
+    }
+
+    var yesGeneratePassButton = document.getElementsByClassName("generate-static-password-confirm-yes");
+    for (let i = 0; i < yesGeneratePassButton.length; i++) {
+        yesGeneratePassButton[i].onclick = function(event) {
+            formData = new FormData();
+            formData.append("csrfToken", getCsrfToken());
+            formData.append("serviceId", event.target.parentElement.parentElement.id);
+            let options = {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            };
+            fetch ('/staticPwGen', options)
+            .then(response => response.json())
+            .then(body => {
+                var serviceId = event.target.parentElement.parentElement.id;
+                var elements = event.target.parentElement.parentElement.getElementsByClassName("generate-static-password-confirm");
+                elements[0].style.display="none";
+                elements[1].style.display="none";
+                event.target.parentElement.parentElement.getElementsByClassName("current-static-password")[0].innerHTML = body.pw;
+                localStorage.setItem("static-password-" + serviceId, body.pw);
+                return false;
             }).catch(error => {
                 console.log(error);
             });

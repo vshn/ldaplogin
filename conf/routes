@@ -4,4 +4,5 @@ GET     /login                      controllers.LoginController.login(request: R
 GET     /login/callback             controllers.LoginController.loginCallback(request: Request, state ?= null, code ?= null)
 
 GET     /                           controllers.HomeController.index(request: Request)
-POST    /pwgen                      controllers.HomeController.pwgen(request: Request)
+POST    /dynamicPwGen               controllers.HomeController.dynamicPwGen(request: Request)
+POST    /staticPwGen                controllers.HomeController.staticPwGen(request: Request)

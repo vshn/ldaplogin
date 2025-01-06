@@ -35,4 +35,19 @@ public class InputUtils {
         return csrfTokenFromRequest != null && csrfTokenFromRequest.length() >= 32 && csrfTokenFromRequest.equals(csrfTokenFromCookie);
     }
 
+    public static Long toLong(String input) {
+        try {
+            return Long.parseLong(input);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Integer toInteger(String input) {
+        try {
+            return Integer.parseInt(input);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

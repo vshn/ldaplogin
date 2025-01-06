@@ -2,10 +2,19 @@
 )
 
 @main("LDAP Login") {
-  <h1>Login</h1>
-  <div class="hint">Choose a service, enter your user name and paste (CTRL+V) your temporary password</div>
-  <br />
-  @for(service <- services) {
-    <a id="@service.getId" href="@service.getUrl()">@service.getName()</a><br />
-  }
+    <h1>Login</h1>
+    <div class="hint">Choose a service, enter your user name and paste (CTRL+V) your temporary password</div>
+    <br />
+    @for(service <- services) {
+        <div id="@service.getId()">
+            <div><a href="@service.getUrl()" class="service">@service.getName()</a></div>
+            @if(service.hasStaticPasswords()) {
+            <div class="static-password">Show static password</div>
+            <div class="current-static-password" style="display: none;">Your current static password cannot be shown</div>
+            <div class="generate-static-password" style="display: none;"><a href="#" class="generate-static-password-link">Generate new static password</a></div>
+            <div class="generate-static-password-confirm" style="display: none;">Really? You may have to change the password in various applications!</div>
+            <div class="generate-static-password-confirm" style="display: none;"><a href="#" class="generate-static-password-confirm-yes">YES</a> &nbsp; <a href="#" class="generate-static-password-confirm-no">NO</a></div>
+            }
+        </div>
+    }
 }

@@ -34,10 +34,12 @@ public class ServicesStore {
         if (srvs.isEmpty()) {
             logger.warn(null, "No services configured. Env variable '" + Config.Option.SERVICES.name() + "' must contain a comma-separated list of service IDs.");
             logger.warn(null, "For every service ID in '" + Config.Option.SERVICES.name() + "' the following env variables must be present and set ($SERVICEID is upper case):");
-            logger.warn(null, "  * SERICE_$SERVICEID_PASSWORD  (plain-text LDAP login password)");
-            logger.warn(null, "  * SERICE_$SERVICEID_NAME      (user-friendly name)");
-            logger.warn(null, "  * SERICE_$SERVICEID_URL       (link to login form)");
-            logger.warn(null, "  * SERICE_$SERVICEID_GROUP     (OpenID group required for users to log in to this service, optional)");
+            logger.warn(null, "  * SERVICE_$SERVICEID_PASSWORD                  (plain-text LDAP login password)");
+            logger.warn(null, "  * SERVICE_$SERVICEID_NAME                      (user-friendly name)");
+            logger.warn(null, "  * SERVICE_$SERVICEID_URL                       (link to login form)");
+            logger.warn(null, "  * SERVICE_$SERVICEID_GROUP                     (OpenID group required for users to log in to this service, optional)");
+            logger.warn(null, "  * SERVICE_$SERVICEID_STATIC_PASSWORDS          (set to 'true' if the service should support static passwords, optional)");
+            logger.warn(null, "  * SERVICE_$SERVICEID_DYNAMIC_PASSWORD_EXPIRES  (override the global USER_DYNAMIC_PASSWORD_EXPIRES setting for this service)");
         }
 
         logger.info(null, "Configured " + srvs.size() + " services");
@@ -52,10 +54,15 @@ public class ServicesStore {
         String name = InputUtils.trimToNull(env.get("SERVICE_" + serviceId + "_NAME"));
         String url = InputUtils.trimToNull(env.get("SERVICE_" + serviceId + "_URL"));
         String group = InputUtils.trimToNull(env.get("SERVICE_" + serviceId + "_GROUP"));
+        boolean hasStaticPasswords = Boolean.TRUE.toString().equalsIgnoreCase(InputUtils.trimToNull(env.get("SERVICE_" + serviceId + "_STATIC_PASSWORDS")));
+        Long dynamicPasswordExpires = InputUtils.toLong(env.get("SERVICE_" + serviceId + "_DYNAMIC_PASSWORD_EXPIRES"));
+        if (dynamicPasswordExpires == null) {
+            dynamicPasswordExpires = Config.Option.USER_DYNAMIC_PASSWORD_EXPIRES.getLong();
+        }
         if (password == null || name == null || url == null) {
             return null;
         }
-        return new Service(serviceId.toLowerCase(Locale.ENGLISH), PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512), name, url, group);
+        return new Service(serviceId.toLowerCase(Locale.ENGLISH), PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512), name, url, group, hasStaticPasswords, dynamicPasswordExpires);
     }
 
     public static List<Service> getServicesByUser(User user) {

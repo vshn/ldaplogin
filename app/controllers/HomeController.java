@@ -11,14 +11,19 @@ import services.OpenId;
 import store.ServicesStore;
 import store.UsersStore;
 import util.CustomLogger;
+import util.InputUtils;
 
 import javax.inject.Inject;
+import java.time.Duration;
 import java.util.List;
 
 public class HomeController extends Controller {
 
     @Inject
     private UsersStore usersStore;
+
+    @Inject
+    private ServicesStore servicesStore;
 
     @Inject
     private OpenId openId;
@@ -35,12 +40,27 @@ public class HomeController extends Controller {
         return ok(views.html.index.render(services));
     }
 
-    public Result pwgen(Http.Request request) {
+    public Result dynamicPwGen(Http.Request request) {
         User user = usersStore.getFromRequest(request, openId);
-        if (user == null) {
+        String serviceId = InputUtils.trimToNull(request.body().asFormUrlEncoded().get("serviceId"));
+        Service service = ServicesStore.getServicesByUser(user).stream().filter(s -> s.getId().equals(serviceId)).findFirst().orElse(null);
+        if (user == null || service == null) {
             throw new NotAllowedException();
         }
-        String password = usersStore.generatePassword(user);
+
+        String password = usersStore.generateDynamicPassword(user, service);
+        return ok(Json.newObject().put("pw", password));
+    }
+
+    public Result staticPwGen(Http.Request request) {
+        User user = usersStore.getFromRequest(request, openId);
+        String serviceId = InputUtils.trimToNull(request.body().asFormUrlEncoded().get("serviceId"));
+        Service service = ServicesStore.getServicesByUser(user).stream().filter(s -> s.getId().equals(serviceId)).findFirst().orElse(null);
+        if (user == null || service == null || !service.hasStaticPasswords()) {
+            throw new NotAllowedException();
+        }
+
+        String password = usersStore.generateStaticPassword(user, service);
         return ok(Json.newObject().put("pw", password));
     }
 }

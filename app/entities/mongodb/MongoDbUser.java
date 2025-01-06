@@ -2,16 +2,18 @@ package entities.mongodb;
 
 import dev.morphia.annotations.*;
 import entities.OpenIdUser;
+import entities.ServicePasswords;
 import entities.User;
-import org.apache.commons.codec.binary.Hex;
 import org.bson.types.ObjectId;
 import util.SimpleSHA512;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Entity(value = "users", useDiscriminator = false)
-public class MongoDbUser implements User {
+public class MongoDbUser implements MongoDbEntity, User {
     @Id
     private ObjectId _id;
 
@@ -24,13 +26,15 @@ public class MongoDbUser implements User {
 
     private String email;
 
+    private Integer emailQuota;
+
     private boolean emailVerified;
 
     private List<String> groupPaths;
 
     private List<MongoDbUserSession> sessions = new ArrayList<>();
 
-    private String passwordHash;
+    private Map<String, MongoDbServicePasswords> servicePasswords = new HashMap<>();
 
     @Indexed // for fast cleanup
     private Long lastActive;
@@ -44,6 +48,7 @@ public class MongoDbUser implements User {
         this.firstName = openIdUser.getFirstName();
         this.lastName = openIdUser.getLastName();
         this.email = openIdUser.getEmail();
+        this.emailQuota = openIdUser.getEmailQuota();
         this.emailVerified = openIdUser.isEmailVerified();
         this.groupPaths = openIdUser.getGroupPaths();
         lastActive = System.currentTimeMillis();
@@ -88,6 +93,15 @@ public class MongoDbUser implements User {
     }
 
     @Override
+    public Integer getEmailQuota() {
+        return emailQuota;
+    }
+
+    public void setEmailQuota(Integer emailQuota) {
+        this.emailQuota = emailQuota;
+    }
+
+    @Override
     public boolean isEmailVerified() {
         return emailVerified;
     }
@@ -119,26 +133,17 @@ public class MongoDbUser implements User {
         return groupPaths;
     }
 
+    @Override
+    public ServicePasswords getServicePasswords(String serviceId) {
+        return servicePasswords.get(serviceId);
+    }
+
+    public void setServicePasswords(String serviceId, ServicePasswords servicePasswords) {
+        this.servicePasswords.put(serviceId, (MongoDbServicePasswords)servicePasswords);
+    }
+
     public void setGroupPaths(List<String> groupPaths) {
         this.groupPaths = new ArrayList<>(groupPaths);
-    }
-
-    @Override
-    public String getPasswordHashHexEncoded() {
-        return passwordHash;
-    }
-
-    @Override
-    public byte[] getPasswordHash() {
-        try {
-            return Hex.decodeHex(passwordHash);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public void setPasswordHash(byte[] passwordHash) {
-        this.passwordHash = new String(Hex.encodeHex(passwordHash));
     }
 
     @Override

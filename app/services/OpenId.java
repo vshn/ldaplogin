@@ -133,12 +133,13 @@ public class OpenId {
         User user = usersStore.getByUid(openIdUser.getUid());
         if (user == null) {
             user = usersStore.create(openIdUser);
-            groupsStore.ensure(openIdUser.getGroupPaths());
             created = true;
         } else {
             updated = usersStore.update(user, openIdUser);
-            groupsStore.ensure(openIdUser.getGroupPaths());
         }
+        groupsStore.ensure(openIdUser.getGroupPaths());
+        groupsStore.updateMetadata(openIdUser.getGroupsMetadata());
+
         String sessionId = IdGenerator.generateSessionId();
         UserSession session = usersStore.createSession(user, sessionId, openIdUser.getIdToken(), cred.getAccessToken(), cred.getRefreshToken(), cred.getExpirationTimeMilliseconds());
 
