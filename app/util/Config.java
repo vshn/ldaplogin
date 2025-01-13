@@ -26,7 +26,10 @@ public class Config {
         OPENID_URL_AUTH, //
         OPENID_URL_LOGOUT, //
         SERVICES, //
+        USER_DYNAMIC_PASSWORD_EXPIRES, //
+        USER_STATIC_PASSWORD_EXPIRES, //
         USER_EXPIRES, //
+        USER_NEVER_EXPIRES_GROUPS, //
         USER_SESSION_EXPIRES; //
 
         public String get() {
@@ -68,7 +71,9 @@ public class Config {
         cfg.put(Option.MONGODB_DATABASE, "ldaplogin");
         cfg.put(Option.MONGODB_HOSTNAME, "localhost");
         cfg.put(Option.MONGODB_USERNAME, "ldaplogin");
-        cfg.put(Option.USER_EXPIRES, "" + 60L * 60L * 24L * 90L); // 90 days by default
+        cfg.put(Option.USER_DYNAMIC_PASSWORD_EXPIRES, "" + 60L * 60L); // 1 hour by default
+        cfg.put(Option.USER_STATIC_PASSWORD_EXPIRES, "" + 60L * 60L * 24L * 30L); // 30 days by default
+        cfg.put(Option.USER_EXPIRES, "" + 60L * 60L * 24L * 365L); // 1 year by default
         cfg.put(Option.USER_SESSION_EXPIRES, "" + 60L * 60L * 24L); // 1 day by default
 
 
@@ -79,6 +84,23 @@ public class Config {
         }
 
         config = Collections.unmodifiableMap(cfg);
+    }
+
+    public static final String SCOPE;
+    static {
+        // We need to normalize the configuration value for reliable results
+        String scope = Option.LDAP_GROUPS_SCOPE.get();
+        if (scope == null || scope.isBlank()) {
+            scope = "/"; // We don't accept groups that don't start with a '/'
+        } else {
+            if (!scope.startsWith("/")) {
+                scope = "/" + scope;
+            }
+            if (!scope.endsWith("/")) {
+                scope = scope + "/";
+            }
+        }
+        SCOPE = scope;
     }
 
     public static String get(Option o) {

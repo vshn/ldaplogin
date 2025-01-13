@@ -1,12 +1,12 @@
 package store;
 
 import entities.OpenIdUser;
+import entities.Service;
 import entities.User;
 import entities.UserSession;
 import play.mvc.Http;
 import services.OpenId;
 
-import java.util.*;
 import java.util.stream.Stream;
 
 public interface UsersStore {
@@ -20,13 +20,13 @@ public interface UsersStore {
 
     Stream<? extends User> getByGroupPath(String groupPath);
 
-    List<? extends User> getAll();
-
     UserSession createSession(User user, String sessionId, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry);
 
     byte[] getEncryptionKey();
 
-    String generatePassword(User user);
+    String generateDynamicPassword(User user, Service service);
+
+    String generateStaticPassword(User user, Service service);
 
     void logout(User user, UserSession session);
 }

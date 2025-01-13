@@ -6,6 +6,8 @@ import com.mongodb.client.MongoDatabase;
 import dev.morphia.mapping.MapperOptions;
 import dev.morphia.Datastore;
 import dev.morphia.Morphia;
+import entities.mongodb.MongoDbGroup;
+import entities.mongodb.MongoDbResource;
 import entities.mongodb.MongoDbUser;
 import org.bouncycastle.util.encoders.Hex;
 import play.inject.ApplicationLifecycle;
@@ -33,7 +35,7 @@ public class MongoDb {
         String password = Config.get(Config.Option.MONGODB_PASSWORD);
         String hostname = Config.get(Config.Option.MONGODB_HOSTNAME);
         String database = Config.get(Config.Option.MONGODB_DATABASE);
-        // Don't use TLS by default for local development environments and for MongoDBs in OpenShift containers
+        // Use TLS by default except for local development
         Boolean tls = !(Config.getBoolean(Config.Option.MONGODB_DISABLE_TLS) || "localhost".equals(hostname));
         String mongoUrl;
         if (username != null && password != null) {
@@ -49,6 +51,8 @@ public class MongoDb {
         MapperOptions mapperOptions = MapperOptions.builder().storeEmpties(false).storeNulls(false).build();
         ds = Morphia.createDatastore(mongoClient, database, mapperOptions);
         ds.getMapper().map(MongoDbUser.class);
+        ds.getMapper().map(MongoDbGroup.class);
+        ds.getMapper().map(MongoDbResource.class);
         ds.ensureIndexes();
         ds.ensureCaps();
 

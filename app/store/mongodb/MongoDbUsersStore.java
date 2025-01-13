@@ -4,46 +4,32 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.CredentialRefreshListener;
 import com.google.api.client.auth.oauth2.TokenErrorResponse;
 import com.google.api.client.auth.oauth2.TokenResponse;
-import dev.morphia.query.Query;
+import com.google.inject.Inject;
+import dev.morphia.UpdateOptions;
+import dev.morphia.annotations.Indexed;
 import dev.morphia.query.filters.Filters;
 import dev.morphia.query.updates.UpdateOperator;
 import dev.morphia.query.updates.UpdateOperators;
-import entities.OpenIdUser;
-import entities.User;
-import entities.UserSession;
+import entities.*;
+import entities.mongodb.MongoDbDynamicPassword;
+import entities.mongodb.MongoDbServicePasswords;
 import entities.mongodb.MongoDbUser;
 import entities.mongodb.MongoDbUserSession;
 import org.apache.directory.api.ldap.model.constants.LdapSecurityConstants;
 import org.apache.directory.api.ldap.model.password.PasswordUtil;
 import play.mvc.Http;
-import services.MongoDb;
 import services.OpenId;
+import store.ServicesStore;
 import store.UsersStore;
-import util.CustomLogger;
-import util.IdGenerator;
-import util.InputUtils;
-import util.SimpleSHA512;
+import util.*;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class MongoDbUsersStore implements UsersStore {
+public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements UsersStore {
 
     private final CustomLogger logger = new CustomLogger(this.getClass());
-
-    @Inject
-    private MongoDb mongoDb;
-
-    private Query<MongoDbUser> query() {
-        return mongoDb.getDS().find(MongoDbUser.class);
-    }
-
-    private Query<MongoDbUser> query(User user) {
-        MongoDbUser mongoDbUser = (MongoDbUser)user;
-        return query().filter(Filters.eq("_id", mongoDbUser.getObjectId()));
-    }
 
     @Override
     public User getFromRequest(Http.Request request, OpenId openId) {
@@ -101,13 +87,13 @@ public class MongoDbUsersStore implements UsersStore {
             UpdateOperator accessTokenIvOp = UpdateOperators.set("sessions.$.openIdAccessTokenIv", session.getOpenIdAccessTokenIv());
             UpdateOperator accessTokenEncOp = UpdateOperators.set("sessions.$.openIdAccessTokenEnc", session.getOpenIdAccessTokenEnc());
             UpdateOperator expiryOp = UpdateOperators.set("sessions.$.openIdTokenExpiry", session.getOpenIdTokenExpiry());
-            query().filter(Filters.eq("sessions.hashedId", session.getHashedId())).update(accessTokenIvOp, accessTokenEncOp, expiryOp).execute();
+            query().filter(Filters.eq("sessions.hashedId", session.getHashedId())).update(new UpdateOptions(), accessTokenIvOp, accessTokenEncOp, expiryOp);
             logger.info(request, "Refreshed OpenID session of " + user);
         }
 
         if (user.getLastActiveNeedsUpdate()) {
             user.setLastActive(System.currentTimeMillis());
-            query(user).update(UpdateOperators.set("lastActive", user.getLastActive())).execute();
+            query(user).update(new UpdateOptions(), UpdateOperators.set("lastActive", user.getLastActive()));
         }
 
         return user;
@@ -136,6 +122,10 @@ public class MongoDbUsersStore implements UsersStore {
             mongoDbUser.setEmail(fromUserEmail);
             updateOperators.add(UpdateOperators.set("email", mongoDbUser.getEmail()));
         }
+        if (!Objects.equals(mongoDbUser.getEmailQuota(), openIdUser.getEmailQuota())) {
+            mongoDbUser.setEmailQuota(openIdUser.getEmailQuota());
+            updateOperators.add(UpdateOperators.set("emailQuota", mongoDbUser.getEmailQuota()));
+        }
         if (!Objects.equals(mongoDbUser.getFirstName(), openIdUser.getFirstName())) {
             mongoDbUser.setFirstName(openIdUser.getFirstName());
             updateOperators.add(UpdateOperators.set("firstName", mongoDbUser.getFirstName()));
@@ -153,7 +143,9 @@ public class MongoDbUsersStore implements UsersStore {
         if (updateOperators.isEmpty()) {
             return false;
         }
-        query(mongoDbUser).update(updateOperators).execute();
+        UpdateOperator[] updateOperatorsArray = new UpdateOperator[updateOperators.size()];
+        updateOperators.toArray(updateOperatorsArray);
+        query(mongoDbUser).update(new UpdateOptions(), updateOperatorsArray);
         return true;
     }
 
@@ -163,8 +155,8 @@ public class MongoDbUsersStore implements UsersStore {
     }
 
     @Override
-    public List<? extends User> getAll() {
-        return query().iterator().toList();
+    public Stream<MongoDbUser> getAll() {
+        return super.getAll();
     }
 
     @Override
@@ -172,7 +164,7 @@ public class MongoDbUsersStore implements UsersStore {
         MongoDbUser mongoDbUser = (MongoDbUser)user;
         MongoDbUserSession session = new MongoDbUserSession(getEncryptionKey(), id, openIdIdentityToken, openIdAccessToken, openIdRefreshToken, openIdTokenExpiry);
         mongoDbUser.addSession(session);
-        query(mongoDbUser).update(UpdateOperators.push("sessions", session)).execute();
+        query(mongoDbUser).update(new UpdateOptions(), UpdateOperators.push("sessions", session));
         return session;
     }
 
@@ -182,11 +174,44 @@ public class MongoDbUsersStore implements UsersStore {
     }
 
     @Override
-    public String generatePassword(User user) {
+    public String generateDynamicPassword(User user, Service service) {
         MongoDbUser mongoDbUser = (MongoDbUser)user;
         String password = IdGenerator.generateSessionId();
-        mongoDbUser.setPasswordHash(PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512));
-        query(user).update(UpdateOperators.set("passwordHash", mongoDbUser.getPasswordHashHexEncoded())).execute();
+        byte[] passwordHash = PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512);
+
+        MongoDbDynamicPassword dynamicPassword = new MongoDbDynamicPassword(passwordHash);
+
+        MongoDbServicePasswords servicePasswords = (MongoDbServicePasswords)mongoDbUser.getServicePasswords(service.getId());
+        if (servicePasswords == null) {
+            servicePasswords = new MongoDbServicePasswords();
+            servicePasswords.addDynamicPassword(dynamicPassword);
+            mongoDbUser.setServicePasswords(service.getId(), servicePasswords);
+            query(user).update(new UpdateOptions(), UpdateOperators.set("servicePasswords." + service.getId(), servicePasswords));
+        } else {
+            servicePasswords.addDynamicPassword(dynamicPassword);
+            query(user).update(new UpdateOptions(), UpdateOperators.push("servicePasswords." + service.getId() + ".dynamicPasswords", dynamicPassword));
+        }
+
+        return password;
+    }
+
+    @Override
+    public String generateStaticPassword(User user, Service service) {
+        MongoDbUser mongoDbUser = (MongoDbUser)user;
+        String password = IdGenerator.generateSessionId();
+        byte[] passwordHash = PasswordUtil.createStoragePassword(password, LdapSecurityConstants.HASH_METHOD_SSHA512);
+
+        MongoDbServicePasswords servicePasswords = (MongoDbServicePasswords)mongoDbUser.getServicePasswords(service.getId());
+        if (servicePasswords == null) {
+            servicePasswords = new MongoDbServicePasswords();
+            servicePasswords.setStaticPwHash(passwordHash);
+            mongoDbUser.setServicePasswords(service.getId(), servicePasswords);
+            query(user).update(new UpdateOptions(), UpdateOperators.set("servicePasswords." + service.getId(), servicePasswords));
+        } else {
+            servicePasswords.setStaticPwHash(passwordHash);
+            query(user).update(new UpdateOptions(), UpdateOperators.set("servicePasswords." + service.getId() + ".staticPwHash", servicePasswords.getStaticPwHashBase64()));
+        }
+
         return password;
     }
 
@@ -196,9 +221,24 @@ public class MongoDbUsersStore implements UsersStore {
     }
 
     private void cleanup() {
-        Long deleteUsers = System.currentTimeMillis() - User.EXPIRES;
-        query().filter(Filters.lt("lastActive", deleteUsers)).delete();
-        Long deleteSessions = System.currentTimeMillis() - MongoDbUserSession.SESSION_EXPIRES;
-        query().filter(Filters.lt("sessions.openIdTokenExpiry", deleteSessions)).update(UpdateOperators.pull("sessions", Filters.lt("openIdTokenExpiry", deleteSessions))).execute();
+        long now = System.currentTimeMillis();
+        Long deleteUsers = now - User.EXPIRES;
+        Long deleteSessions = now - MongoDbUserSession.SESSION_EXPIRES;
+
+        // remove expired dynamic passwords with service-specific expiry times
+        if (!ServicesStore.getAll().isEmpty()) {
+            UpdateOperator[] ops = new UpdateOperator[ServicesStore.getAll().size()];
+            int i = 0;
+            for (Service service : ServicesStore.getAll()) {
+                ops[i++] = UpdateOperators.pull("servicePasswords." + service.getId() + ".dynamicPasswords", Filters.lt("timestamp", now - service.getDynamicPasswordExpires()*1000L));
+            }
+            query().update(new UpdateOptions(), ops);
+        }
+
+        // remove users entirely
+        query().filter(Filters.lt("lastActive", deleteUsers), Filters.nin("groupPaths", User.NEVER_EXPIRES_GROUPS)).delete();
+
+        // remove sessions if their openId tokens have expired
+        query().filter(Filters.lt("sessions.openIdTokenExpiry", deleteSessions)).update(new UpdateOptions(), UpdateOperators.pull("sessions", Filters.lt("openIdTokenExpiry", deleteSessions)));
     }
 }

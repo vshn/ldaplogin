@@ -1,12 +1,15 @@
 package entities.memory;
 
 import entities.OpenIdUser;
+import entities.ServicePasswords;
 import entities.User;
 import entities.UserSession;
 import util.SimpleSHA512;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MemoryUser implements User {
 
@@ -18,13 +21,15 @@ public class MemoryUser implements User {
 
     private String email;
 
+    private Integer emailQuota;
+
     private boolean emailVerified;
 
     private List<String> groupPaths;
 
     private List<MemoryUserSession> sessions = new ArrayList<>();
 
-    private byte[] passwordHash;
+    private Map<String, MemoryServicePasswords> servicePasswords = new HashMap<>();
 
     private Long lastActive;
 
@@ -33,6 +38,7 @@ public class MemoryUser implements User {
         this.firstName = openIdUser.getFirstName();
         this.lastName = openIdUser.getLastName();
         this.email = openIdUser.getEmail();
+        this.emailQuota = openIdUser.getEmailQuota();
         this.emailVerified = openIdUser.isEmailVerified();
         this.groupPaths = openIdUser.getGroupPaths();
         lastActive = System.currentTimeMillis();
@@ -73,6 +79,15 @@ public class MemoryUser implements User {
     }
 
     @Override
+    public Integer getEmailQuota() {
+        return emailQuota;
+    }
+
+    public void setEmailQuota(Integer emailQuota) {
+        this.emailQuota = emailQuota;
+    }
+
+    @Override
     public boolean isEmailVerified() {
         return emailVerified;
     }
@@ -104,22 +119,17 @@ public class MemoryUser implements User {
         return groupPaths;
     }
 
+    @Override
+    public ServicePasswords getServicePasswords(String serviceId) {
+        return servicePasswords.get(serviceId);
+    }
+
+    public void setServicePasswords(String serviceId, ServicePasswords servicePasswords) {
+        this.servicePasswords.put(serviceId, (MemoryServicePasswords) servicePasswords);
+    }
+
     public void setGroupPaths(List<String> groupPaths) {
         this.groupPaths = new ArrayList<>(groupPaths);
-    }
-
-    @Override
-    public String getPasswordHashHexEncoded() {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public byte[] getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(byte[] passwordHash) {
-        this.passwordHash = passwordHash;
     }
 
     @Override

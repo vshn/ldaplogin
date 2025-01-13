@@ -1,28 +1,34 @@
 package entities;
 
-import java.util.Objects;
+import util.Config;
 
-public class Group {
-    private final String path;
+public interface Group {
+    String getDescription();
+    String getEmail();
+    String getPath();
 
-    public Group(String path) {
-        this.path = path;
+    default String getCn() {
+        return Group.cnFromPath(getPath());
     }
 
-    public String getPath() {
-        return path;
+    static boolean isInScope(Group group) {
+        return group == null ? null : isInScope(group.getPath());
     }
 
-    public String getCn() {
-        return cnFromPath(getPath());
-    }
-
-    public static String cnFromPath(String path) {
-        // NOTE: This may produce group collisions. We don't care for now.
-        String cn = path;
-        if (cn.startsWith("/")) {
-            cn = cn.substring(1);
+    static boolean isInScope(String path) {
+        if (path == null) {
+            return false;
         }
+        return path.startsWith(Config.SCOPE) && path.length() > Config.SCOPE.length();
+    }
+
+    static String cnFromPath(String path) {
+        // NOTE: This may produce group collisions. We don't care for now.
+        if (!isInScope(path)) {
+            return null;
+        }
+        String cn = path.substring(Config.SCOPE.length());
+
         cn = cn.replace(",", "\\,");
         cn = cn.replace("+", "\\+");
         cn = cn.replace("<", "\\<");
@@ -39,18 +45,5 @@ public class Group {
         cn = cn.replaceAll("\\s+", " ");
         cn = cn.trim();
         return cn;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Group group = (Group) o;
-        return Objects.equals(path, group.path);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(path);
     }
 }
