@@ -9,6 +9,12 @@ LDAPLogin operates as follows:
 * User logs in to the service using the regular user name and the temporary password
 * Service connects to LDAPLogin's LDAP port in order to validate the temporary password and get all required user information
 
+This document describes the configuration of ldaplogin itself. Other relevant documentation:
+
+* [How to set up Keycloak for ldaplogin](KEYCLOAK.md)
+* [How to use SOGo with ldaplogin](SOGO.md)
+* [How to use Dovecot with ldaplogin](DOVECOT.md)
+
 ## Known issues
 
 * Performance isn't optimized at all, especially handling of groups. You'll probably start noticing issues if you get into the 1000s of users.
