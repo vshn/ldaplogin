@@ -30,7 +30,7 @@ public class MongoDbUser implements MongoDbEntity, User {
 
     private boolean emailVerified;
 
-    private List<String> groupPaths;
+    private List<String> groupPaths = new ArrayList<>();
 
     private List<MongoDbUserSession> sessions = new ArrayList<>();
 
