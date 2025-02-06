@@ -3,18 +3,14 @@ package controllers;
 import entities.NotAllowedException;
 import entities.Service;
 import entities.User;
-import org.apache.directory.api.ldap.model.constants.LdapSecurityConstants;
-import org.apache.directory.api.ldap.model.password.PasswordUtil;
 import play.libs.Json;
 import play.mvc.*;
 import services.OpenId;
 import store.ServicesStore;
 import store.UsersStore;
-import util.CustomLogger;
 import util.InputUtils;
 
 import javax.inject.Inject;
-import java.time.Duration;
 import java.util.List;
 
 public class HomeController extends Controller {
@@ -27,8 +23,6 @@ public class HomeController extends Controller {
 
     @Inject
     private OpenId openId;
-
-    private final CustomLogger logger = new CustomLogger(this.getClass());
 
     public Result index(Http.Request request) {
         User user = usersStore.getFromRequest(request, openId);

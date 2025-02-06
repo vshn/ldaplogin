@@ -27,7 +27,6 @@ public class Config {
         OPENID_URL_LOGOUT, //
         SERVICES, //
         USER_DYNAMIC_PASSWORD_EXPIRES, //
-        USER_STATIC_PASSWORD_EXPIRES, //
         USER_EXPIRES, //
         USER_NEVER_EXPIRES_GROUPS, //
         USER_SESSION_EXPIRES; //
@@ -72,9 +71,8 @@ public class Config {
         cfg.put(Option.MONGODB_HOSTNAME, "localhost");
         cfg.put(Option.MONGODB_USERNAME, "ldaplogin");
         cfg.put(Option.USER_DYNAMIC_PASSWORD_EXPIRES, "" + 60L * 60L); // 1 hour by default
-        cfg.put(Option.USER_STATIC_PASSWORD_EXPIRES, "" + 60L * 60L * 24L * 30L); // 30 days by default
         cfg.put(Option.USER_EXPIRES, "" + 60L * 60L * 24L * 365L); // 1 year by default
-        cfg.put(Option.USER_SESSION_EXPIRES, "" + 60L * 60L * 24L); // 1 day by default
+        cfg.put(Option.USER_SESSION_EXPIRES, "" + 60L * 60L * 24L * 30L); // 30 days by default
 
 
         for (Option o : Option.values()) {

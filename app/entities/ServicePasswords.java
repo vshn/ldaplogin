@@ -9,5 +9,4 @@ public interface ServicePasswords {
     List<? extends DynamicPassword> getDynamicPasswords();
 
     long DYNAMIC_PASSWORD_EXPIRES = 1000L * Config.Option.USER_DYNAMIC_PASSWORD_EXPIRES.getLong();
-    long STATIC_PASSWORD_EXPIRES = 1000L * Config.Option.USER_STATIC_PASSWORD_EXPIRES.getLong();
 }

@@ -1,12 +1,8 @@
 package store.mongodb;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.CredentialRefreshListener;
-import com.google.api.client.auth.oauth2.TokenErrorResponse;
-import com.google.api.client.auth.oauth2.TokenResponse;
-import com.google.inject.Inject;
+import com.mongodb.client.result.UpdateResult;
 import dev.morphia.UpdateOptions;
-import dev.morphia.annotations.Indexed;
 import dev.morphia.query.filters.Filters;
 import dev.morphia.query.updates.UpdateOperator;
 import dev.morphia.query.updates.UpdateOperators;
@@ -23,13 +19,10 @@ import store.ServicesStore;
 import store.UsersStore;
 import util.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
 public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements UsersStore {
-
-    private final CustomLogger logger = new CustomLogger(this.getClass());
 
     @Override
     public User getFromRequest(Http.Request request, OpenId openId) {
@@ -49,59 +42,16 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
         if (user == null) {
             return null;
         }
-
-        MongoDbUserSession session = user.getSessionById(sessionId);
-        if (session == null) {
-            return null;
-        }
-        session.setKey(mongoDb.getEncryptionKey());
-
-        Credential credential = openId.getCredentialFromSession(session, new CredentialRefreshListener() {
-            @Override
-            public void onTokenResponse(Credential credential, TokenResponse tokenResponse) throws IOException {
-                update(user, OpenIdUser.fromTokenResponse(tokenResponse));
-            }
-
-            @Override
-            public void onTokenErrorResponse(Credential credential, TokenErrorResponse tokenErrorResponse) throws IOException {
-                // we don't do anything, the session will expire
-            }
-        });
-        if (credential == null) {
-            // session doesn't have valid OpenID tokens. Not sure what happened but let's play it safe.
-            return null;
-        }
-        // session was created via OpenId, verify that it is still valid
-        if (credential.getExpiresInSeconds() == null || credential.getExpiresInSeconds() <= 0) {
-            try {
-                if (!credential.refreshToken()) {
-                    logger.info(request, "Could not refresh openIdAccessToken, logging out user");
-                    return null;
-                }
-            } catch (Exception e) {
-                logger.info(request, "Could not refresh openIdAccessToken, logging out user");
-                return null;
-            }
-            session.setOpenIdAccessToken(credential.getAccessToken());
-            session.setOpenIdTokenExpiry(credential.getExpirationTimeMilliseconds());
-            UpdateOperator accessTokenIvOp = UpdateOperators.set("sessions.$.openIdAccessTokenIv", session.getOpenIdAccessTokenIv());
-            UpdateOperator accessTokenEncOp = UpdateOperators.set("sessions.$.openIdAccessTokenEnc", session.getOpenIdAccessTokenEnc());
-            UpdateOperator expiryOp = UpdateOperators.set("sessions.$.openIdTokenExpiry", session.getOpenIdTokenExpiry());
-            query().filter(Filters.eq("sessions.hashedId", session.getHashedId())).update(new UpdateOptions(), accessTokenIvOp, accessTokenEncOp, expiryOp);
-            logger.info(request, "Refreshed OpenID session of " + user);
-        }
-
-        if (user.getLastActiveNeedsUpdate()) {
-            user.setLastActive(System.currentTimeMillis());
-            query(user).update(new UpdateOptions(), UpdateOperators.set("lastActive", user.getLastActive()));
-        }
-
-        return user;
+        user.setKey(mongoDb.getEncryptionKey());
+        UserSession session = user.getSessionById(sessionId);
+        return openId.validateUserSession(request, user, session) ? user : null;
     }
 
     @Override
     public User getByUid(String uid) {
-        return query().filter(Filters.eq("uid", uid)).first();
+        MongoDbUser user = query().filter(Filters.eq("uid", uid)).first();
+        user.setKey(mongoDb.getEncryptionKey());
+        return user;
     }
 
     @Override
@@ -218,6 +168,43 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
     @Override
     public void logout(User user, UserSession session) {
         ((MongoDbUser)user).removeSession((MongoDbUserSession)session);
+        query(user).update(new UpdateOptions(), UpdateOperators.pull("sessions", Filters.eq("hashedId", session.getHashedId())));
+    }
+
+    @Override
+    public void updateLastActive(User user) {
+        if (user.getLastActiveNeedsUpdate()) {
+            MongoDbUser mongoDbUser = (MongoDbUser)user;
+            mongoDbUser.setLastActive(System.currentTimeMillis());
+            query(user).update(new UpdateOptions(), UpdateOperators.set("lastActive", user.getLastActive()));
+        }
+    }
+
+    @Override
+    public void updateSession(UserSession session, Credential credential) {
+        MongoDbUserSession mongoDbUserSession = (MongoDbUserSession)session;
+        mongoDbUserSession.setOpenIdAccessToken(credential.getAccessToken());
+        mongoDbUserSession.setOpenIdTokenExpiry(credential.getExpirationTimeMilliseconds());
+        UpdateOperator accessTokenIvOp = UpdateOperators.set("sessions.$.openIdAccessTokenIv", mongoDbUserSession.getOpenIdAccessTokenIv());
+        UpdateOperator accessTokenEncOp = UpdateOperators.set("sessions.$.openIdAccessTokenEnc", mongoDbUserSession.getOpenIdAccessTokenEnc());
+        UpdateOperator expiryOp = UpdateOperators.set("sessions.$.openIdTokenExpiry", mongoDbUserSession.getOpenIdTokenExpiry());
+        UpdateOperator lifetimeOp = UpdateOperators.set("sessions.$.openIdTokenLifetime", mongoDbUserSession.getOpenIdTokenLifetime());
+        query().filter(Filters.eq("sessions.hashedId", mongoDbUserSession.getHashedId())).update(new UpdateOptions(), accessTokenIvOp, accessTokenEncOp, expiryOp, lifetimeOp);
+    }
+
+    @Override
+    public boolean shouldRefreshProactively(User user, UserSession session) {
+        long remainingLifetime = session.getOpenIdTokenExpiry() - System.currentTimeMillis();
+        // We refresh proactively if the token has less than half of its lifetime left.
+        // However don't bother if the token expires in less than 10 seconds because that may not be enough time until we'll have to force the refresh anyway.
+        if (remainingLifetime > 10000L && remainingLifetime < session.getOpenIdTokenLifetime() / 2) {
+            // in principle a proactive refresh makes sense, but we need to acquire a lock. We do this by trying to set openIdTokenLifetime to 0.
+            UpdateOperator lifetimeOp = UpdateOperators.set("sessions.$.openIdTokenLifetime", 0L);
+            UpdateResult r = query().filter(Filters.eq("sessions.hashedId", session.getHashedId()), Filters.eq("sessions.openIdTokenLifetime", session.getOpenIdTokenLifetime())).update(new UpdateOptions(), lifetimeOp);
+            ((MongoDbUserSession)session).setOpenIdTokenLifetime(0L);
+            return r.getMatchedCount() > 0; // if no object matched then some other thread was quicker
+        }
+        return false;
     }
 
     private void cleanup() {

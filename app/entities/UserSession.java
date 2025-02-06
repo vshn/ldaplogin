@@ -10,4 +10,6 @@ public interface UserSession {
     String getOpenIdRefreshToken();
 
     Long getOpenIdTokenExpiry();
+
+    Long getOpenIdTokenLifetime();
 }

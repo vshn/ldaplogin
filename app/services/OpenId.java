@@ -8,7 +8,6 @@ import entities.NotAllowedException;
 import entities.OpenIdUser;
 import entities.User;
 import entities.UserSession;
-import entities.mongodb.MongoDbUserSession;
 import org.apache.commons.lang3.tuple.Pair;
 import play.mvc.Http;
 import store.GroupsStore;
@@ -141,10 +140,76 @@ public class OpenId {
         groupsStore.updateMetadata(openIdUser.getGroupsMetadata());
 
         String sessionId = IdGenerator.generateSessionId();
-        UserSession session = usersStore.createSession(user, sessionId, openIdUser.getIdToken(), cred.getAccessToken(), cred.getRefreshToken(), cred.getExpirationTimeMilliseconds());
+        usersStore.createSession(user, sessionId, openIdUser.getIdToken(), cred.getAccessToken(), cred.getRefreshToken(), cred.getExpirationTimeMilliseconds());
 
         logger.info(request, user + " logged in" + ((created || updated) ? (", shadow user " + (created ? "created" : "updated")) : ""));
         return Pair.of(user, sessionId);
+    }
+
+    /**
+     * This method checks if the user has a valid session with the IDP and refreshes the session if necessary.
+     * If the refresh succeeds, then the local shadow user is updated.
+     * If the refresh fails with a 4xx status code, then that means that the IDP considers the user to be logged out, and therefore the session is terminated.
+     * If the refresh fails with some other error (e.g. 5xx or connection refused) then the user can't authenticate, but the session remains in the database and we'll try to refresh the session again next time.
+     * @param request
+     * @param user
+     * @param session
+     * @return
+     */
+    public boolean validateUserSession(Http.Request request, User user, UserSession session) {
+        if (user == null || session == null) {
+            return false;
+        }
+        Credential credential = getCredentialFromSession(session, new CredentialRefreshListener() {
+            @Override
+            public void onTokenResponse(Credential credential, TokenResponse tokenResponse) throws IOException {
+                usersStore.update(user, OpenIdUser.fromTokenResponse(tokenResponse));
+            }
+
+            @Override
+            public void onTokenErrorResponse(Credential credential, TokenErrorResponse tokenErrorResponse) throws IOException {
+                // we don't do anything, the session will expire
+            }
+        });
+        if (credential == null) {
+            // session doesn't have valid OpenID tokens. Not sure what happened but let's play it safe.
+            return false;
+        }
+        // session was created via OpenId, verify that it is still valid
+        if (credential.getExpiresInSeconds() == null || credential.getExpiresInSeconds() <= 0) {
+            if (credentialRefresh(request, user, session, credential)) {
+                usersStore.updateLastActive(user);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        // token is still valid but may expire soon(ish)
+        if (usersStore.shouldRefreshProactively(user, session)) {
+            new Thread(() -> credentialRefresh(request, user, session, credential)).start();
+        }
+        usersStore.updateLastActive(user);
+        return true;
+    }
+
+    private boolean credentialRefresh(Http.Request request, User user, UserSession session, Credential credential) {
+        try {
+            if (!credential.refreshToken()) {
+                logger.info(request, "Unexpected response from IDP when refreshing user session for " + user.getUid() + " (will try again)");
+                return false;
+            }
+        } catch (TokenResponseException e) {
+            logger.info(request, "Couldn't refresh user session, IDP responded with 4xx, logging out " + user.getUid());
+            usersStore.logout(user, session);
+            return false;
+        } catch (Exception e) {
+            logger.info(request, "Can't contact IDP to refresh user session for " + user.getUid() + " (will try again): " + e.getMessage());
+            return false;
+        }
+        usersStore.updateSession(session, credential);
+        logger.info(request, "Refreshed OpenID session of " + user);
+        return true;
     }
 
 

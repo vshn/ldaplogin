@@ -24,6 +24,7 @@ public class MongoDbUserSession implements UserSession {
     private String openIdRefreshTokenIv;
     @Indexed // for fast cleanup
     private Long openIdTokenExpiry;
+    private Long openIdTokenLifetime;
 
     @Transient
     private byte[] key;
@@ -67,6 +68,7 @@ public class MongoDbUserSession implements UserSession {
         }
 
         this.openIdTokenExpiry = openIdTokenExpiry;
+        this.openIdTokenLifetime = openIdTokenExpiry - System.currentTimeMillis();
     }
 
     public void setKey(byte[] key) {
@@ -89,7 +91,7 @@ public class MongoDbUserSession implements UserSession {
 
     @Override
     public String getOpenIdAccessToken() {
-        if (openIdAccessTokenDecrypted == null) {
+        if (openIdAccessTokenDecrypted == null && openIdAccessTokenIv != null && openIdAccessTokenEnc != null) {
             SimpleAes aes = new SimpleAes(key);
             openIdAccessTokenDecrypted = aes.decryptHex(openIdAccessTokenIv, openIdAccessTokenEnc);
         }
@@ -119,7 +121,7 @@ public class MongoDbUserSession implements UserSession {
 
     @Override
     public String getOpenIdRefreshToken() {
-        if (openIdRefreshTokenDecrypted == null) {
+        if (openIdRefreshTokenDecrypted == null && openIdRefreshTokenIv != null && openIdRefreshTokenEnc != null) {
             SimpleAes aes = new SimpleAes(key);
             openIdRefreshTokenDecrypted = aes.decryptHex(openIdRefreshTokenIv, openIdRefreshTokenEnc);
         }
@@ -131,8 +133,18 @@ public class MongoDbUserSession implements UserSession {
         return openIdTokenExpiry;
     }
 
+    @Override
+    public Long getOpenIdTokenLifetime() {
+        return openIdTokenLifetime;
+    }
+
     public void setOpenIdTokenExpiry(Long openIdTokenExpiry) {
         this.openIdTokenExpiry = openIdTokenExpiry;
+        this.openIdTokenLifetime = openIdTokenExpiry - System.currentTimeMillis();
+    }
+
+    public void setOpenIdTokenLifetime(Long openIdTokenLifetime) {
+        this.openIdTokenLifetime = openIdTokenLifetime;
     }
 
     @Override
