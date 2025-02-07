@@ -11,6 +11,7 @@ public class MemoryUserSession implements UserSession {
     private String openIdAccessToken;
     private String openIdRefreshToken;
     private Long openIdTokenExpiry;
+    private Long openIdTokenLifetime;
 
     public MemoryUserSession(String id, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
         this.hashedId = new SimpleSHA512().hash(id);
@@ -18,6 +19,7 @@ public class MemoryUserSession implements UserSession {
         this.openIdAccessToken = openIdAccessToken;
         this.openIdRefreshToken = openIdRefreshToken;
         this.openIdTokenExpiry = openIdTokenExpiry;
+        this.openIdTokenLifetime = openIdTokenExpiry - System.currentTimeMillis();
     }
 
     @Override
@@ -49,8 +51,18 @@ public class MemoryUserSession implements UserSession {
         return openIdTokenExpiry;
     }
 
+    @Override
+    public Long getOpenIdTokenLifetime() {
+        return openIdTokenLifetime;
+    }
+
     public void setOpenIdTokenExpiry(Long openIdTokenExpiry) {
         this.openIdTokenExpiry = openIdTokenExpiry;
+        this.openIdTokenLifetime = openIdTokenExpiry - System.currentTimeMillis();
+    }
+
+    public void setOpenIdTokenLifetime(Long openIdTokenLifetime) {
+        this.openIdTokenLifetime = openIdTokenLifetime;
     }
 
     @Override

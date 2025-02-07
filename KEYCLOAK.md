@@ -128,3 +128,13 @@ Now test the result.
 * The resulting JSON needs to have a field `groups_metadata` with a list of JSON objects describing the user's groups.
 
 If it doesn't work check the Mapper configuration of your client scope and verify that the user is member of a group, and the group has a `group_metadata` attribute with valid JSON in it.
+
+## Token and session lifespans
+
+You need to take some care to set up your token lifespans correctly. Your realm defaults will likely not work well.
+
+In order to do this go to the client settings in Keycloak, "Advanced" tab, and "Advanced settings".
+
+* Check "Access Token Lifespan". This defines how often ldaplogin will refresh the user session (i.e. how long it will take for ldaplogin to notice changes to the user). This isn't particularly critical and your realm defaults likely work fine, but generally it should be in the order of minutes up to maybe hours. 
+* Set "Client Session Idle" to at least a few days, we suggest 30 days. This defines for how long an idle session will be kept. Ideally this should line up with the `USER_SESSION_EXPIRES` setting. A relatively high value is required to ensure that user login via LDAP keeps working, which is critical because it's not possible for the user to get a new IDP session via LDAP (i.e. if the user has no working IDP session then LDAP login won't work and the user has to log in via the web interface once, which is inconvenient).
+* Set "Client Session Max" to more than "Client Session Idle", we suggest 90 days. This defines how for how long an active session can remain working. After this period the LDAP login will stop working and the user will have to log in via web interface to create a new IDP session.

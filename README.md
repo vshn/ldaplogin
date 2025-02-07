@@ -121,10 +121,9 @@ LDAPLogin can only be configured via environment variables.
 * `SERVICE_$SERVICEUPPER_GROUP`: IDP group required for the user to use this service.
 * `SERVICE_$SERVICEUPPER_STATIC_PASSWORDS`: Set to "true" if the service should offer the use of static (non-expiring, non-changing) passwords. Defaults to "false". 
 * `USER_EXPIRES`: Number of seconds until a user expires and gets deleted automatically. Defaults to "31536000" (365 days).
-* `USER_SESSION_EXPIRES`: Number of seconds until a user's session expires and gets deleted automatically. Defaults to "86400" (1 day).
-* `USER_DYNAMIC_PASSWORD_EXPIRES`: Number of seconds since password generation until a user's dynamic password for a service expires. Defaults to "3600" (1 hour).
-* `USER_STATIC_PASSWORD_EXPIRES`: Number of seconds since last IDP login until a user's static passwords (all of them) expire (can be reactivated by logging in via IDP). Defaults to "2592000" (30 days).
-* `USER_NEVER_EXPIRES_GROUPS`: Comma-separated list of full group paths. If the user is member of one of those groups, it will never expire. Intended for non-human accounts. Defaults to empty list.
+* `USER_SESSION_EXPIRES`: Number of seconds until a user's session expires and gets deleted. Defaults to "2592000" (30 days). Note that it isn't necessary to set this to a low value because all sessions get refreshed via the IDP anyway before they can be used, therefore this setting isn't really security relevant; it just limits the buildup of stale sessions in the DB. Should align with the Keycloak setting "Client Session Idle" if applicable.
+* `USER_DYNAMIC_PASSWORD_EXPIRES`: Number of seconds until a dynamic password expires. Defaults to "3600" (1 hour). Can be overridden via a service configuration.
+* `USER_NEVER_EXPIRES_GROUPS`: Comma-separated list of full group paths. If the user is member of one of those groups its LDAP login will keep working forever, even if the IDP session is gone. Intended for non-human accounts. Defaults to empty list.
 
 ## License
 

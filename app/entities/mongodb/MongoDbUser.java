@@ -7,10 +7,7 @@ import entities.User;
 import org.bson.types.ObjectId;
 import util.SimpleSHA512;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Entity(value = "users", useDiscriminator = false)
 public class MongoDbUser implements MongoDbEntity, User {
@@ -71,11 +68,16 @@ public class MongoDbUser implements MongoDbEntity, User {
         sessions.remove(session);
     }
 
-
     @Override
     public MongoDbUserSession getSessionById(String sessionId) {
         String hashedId = new SimpleSHA512().hash(sessionId);
         return sessions.stream().filter(s -> s.getHashedId().equals(hashedId)).findFirst().orElse(null);
+    }
+
+    public void setKey(byte[] key) {
+        if (sessions != null) {
+            sessions.forEach(s -> s.setKey(key));
+        }
     }
 
     @Override

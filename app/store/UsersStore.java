@@ -1,5 +1,6 @@
 package store;
 
+import com.google.api.client.auth.oauth2.Credential;
 import entities.OpenIdUser;
 import entities.Service;
 import entities.User;
@@ -29,4 +30,10 @@ public interface UsersStore {
     String generateStaticPassword(User user, Service service);
 
     void logout(User user, UserSession session);
+
+    void updateLastActive(User user);
+
+    void updateSession(UserSession session, Credential credential);
+
+    boolean shouldRefreshProactively(User user, UserSession session);
 }

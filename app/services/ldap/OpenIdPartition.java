@@ -17,6 +17,7 @@ import org.apache.directory.server.core.api.filtering.EntryFilteringCursorImpl;
 import org.apache.directory.server.core.api.interceptor.context.*;
 import org.apache.directory.server.core.api.partition.*;
 import org.apache.directory.server.xdbm.search.Evaluator;
+import services.OpenId;
 import store.GroupsStore;
 import store.ResourcesStore;
 import store.UsersStore;
@@ -52,6 +53,9 @@ public class OpenIdPartition extends AbstractPartition {
 
     @Inject
     private ResourcesStore resourcesStore;
+
+    @Inject
+    private OpenId openId;
 
     public static OpenIdPartition createPartition(SchemaManager schemaManager, DnFactory dnFactory, String id, String suffix, int cacheSize, File workingDirectory) throws Exception {
         OpenIdPartition partition = new OpenIdPartition(schemaManager, dnFactory, dnFactory.create(suffix));
@@ -142,7 +146,7 @@ public class OpenIdPartition extends AbstractPartition {
                     || (searchContext.getScope() == SearchScope.ONELEVEL && searchContext.getDn().equals(peopleDn))
                     || (searchContext.getScope() == SearchScope.SUBTREE && searchContext.getDn().isAncestorOf(servicePeopleDn))) {
                 usersStore.getByGroupPath(service.getGroup())
-                    .map(u -> entryFromUser(u, service))
+                    .map(u -> entryFromUser(u, service, false))
                     .filter(e -> evaluate(evaluator, e))
                     .forEach(entries::add);
             }
@@ -196,7 +200,7 @@ public class OpenIdPartition extends AbstractPartition {
         Service userService = service == null ? getServiceFromUserDn(lookupContext.getDn()) : service;
         User user = getUserByDn(lookupContext.getDn(), userService);
         if (user != null) {
-            return entryFromUser(user, userService);
+            return entryFromUser(user, userService, true);
         }
 
 
@@ -260,7 +264,7 @@ public class OpenIdPartition extends AbstractPartition {
         throw new IllegalStateException("not implemented");
     }
 
-    private Entry entryFromUser(User user, Service service) {
+    private Entry entryFromUser(User user, Service service, boolean includePwHashes) {
         Entry entry = new DefaultEntry(schemaManager, userDn(user, service));
         entry.put("uid", user.getUid());
         entry.put("mail", user.getEmail());
@@ -271,9 +275,11 @@ public class OpenIdPartition extends AbstractPartition {
         if (user.getEmailQuota() != null) {
             entry.put("mailQuota", "" + user.getEmailQuota());
         }
-        byte[][] activePasswords = user.getActivePasswords(service.getId());
-        if (activePasswords.length > 0) {
-            entry.put("userPassword", activePasswords);
+        if (includePwHashes) {
+            byte[][] activePasswords = user.getActivePasswords(service.getId(), openId);
+            if (activePasswords.length > 0) {
+                entry.put("userPassword", activePasswords);
+            }
         }
         entry.put("objectClass", "inetOrgPerson", "inetUser", "mailRecipient", "organizationalPerson", "person", "top", "groupMember");
         String[] groups = user.getGroupPaths().stream()

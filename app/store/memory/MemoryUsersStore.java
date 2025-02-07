@@ -1,9 +1,11 @@
 package store.memory;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.CredentialRefreshListener;
-import com.google.api.client.auth.oauth2.TokenErrorResponse;
-import com.google.api.client.auth.oauth2.TokenResponse;
+import com.mongodb.client.result.UpdateResult;
+import dev.morphia.UpdateOptions;
+import dev.morphia.query.filters.Filters;
+import dev.morphia.query.updates.UpdateOperator;
+import dev.morphia.query.updates.UpdateOperators;
 import entities.OpenIdUser;
 import entities.Service;
 import entities.User;
@@ -17,17 +19,13 @@ import org.apache.directory.api.ldap.model.password.PasswordUtil;
 import play.mvc.Http;
 import services.OpenId;
 import store.UsersStore;
-import util.CustomLogger;
 import util.IdGenerator;
 import util.InputUtils;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
 
 public class MemoryUsersStore implements UsersStore {
-
-    private final CustomLogger logger = new CustomLogger(this.getClass());
 
     private final static Set<MemoryUser> users = new HashSet<>();
 
@@ -43,51 +41,16 @@ public class MemoryUsersStore implements UsersStore {
         if (sessionId == null) {
             return null;
         }
-        MemoryUser user = users.stream().filter(u -> u.getSessionById(sessionId) != null).findFirst().orElse(null);
+        User user = users.stream().filter(u -> u.getSessionById(sessionId) != null).findFirst().orElse(null);
         if (user == null) {
             return null;
         }
-        MemoryUserSession session = user.getSessionById(sessionId);
+        UserSession session = user.getSessionById(sessionId);
         if (session == null) {
             return null;
         }
 
-        Credential credential = openId.getCredentialFromSession(session, new CredentialRefreshListener() {
-            @Override
-            public void onTokenResponse(Credential credential, TokenResponse tokenResponse) throws IOException {
-                update(user, OpenIdUser.fromTokenResponse(tokenResponse));
-            }
-
-            @Override
-            public void onTokenErrorResponse(Credential credential, TokenErrorResponse tokenErrorResponse) throws IOException {
-                // we don't do anything, the session will expire
-            }
-        });
-        if (credential == null) {
-            // session doesn't have valid OpenID tokens. Not sure what happened but let's play it safe.
-            return null;
-        }
-        // session was created via OpenId, verify that it is still valid
-        if (credential.getExpiresInSeconds() == null || credential.getExpiresInSeconds() <= 0) {
-            try {
-                if (!credential.refreshToken()) {
-                    logger.info(request, "Could not refresh openIdAccessToken, logging out user");
-                    return null;
-                }
-            } catch (Exception e) {
-                logger.info(request, "Could not refresh openIdAccessToken, logging out user");
-                return null;
-            }
-            session.setOpenIdAccessToken(credential.getAccessToken());
-            session.setOpenIdTokenExpiry(credential.getExpirationTimeMilliseconds());
-            logger.info(request, "Refreshed OpenID session of " + user);
-        }
-
-        if (user.getLastActiveNeedsUpdate()) {
-            user.setLastActive(System.currentTimeMillis());
-        }
-
-        return user;
+        return openId.validateUserSession(request, user, session) ? user : null;
     }
 
     @Override
@@ -195,5 +158,29 @@ public class MemoryUsersStore implements UsersStore {
     @Override
     public void logout(User user, UserSession session) {
         ((MemoryUser)user).removeSession((MemoryUserSession)session);
+    }
+
+    @Override
+    public void updateLastActive(User user) {
+        ((MemoryUser)user).setLastActive(System.currentTimeMillis());
+    }
+
+    @Override
+    public void updateSession(UserSession session, Credential credential) {
+        MemoryUserSession memoryUserSession = (MemoryUserSession)session;
+        memoryUserSession.setOpenIdAccessToken(credential.getAccessToken());
+        memoryUserSession.setOpenIdTokenExpiry(credential.getExpirationTimeMilliseconds());
+    }
+
+    @Override
+    public boolean shouldRefreshProactively(User user, UserSession session) {
+        long remainingLifetime = session.getOpenIdTokenExpiry() - System.currentTimeMillis();
+        // We refresh proactively if the token has less than half of its lifetime left.
+        // However don't bother if the token expires in less than 10 seconds because that may not be enough time until we'll have to force the refresh anyway.
+        if (remainingLifetime > 10000L && remainingLifetime < session.getOpenIdTokenLifetime() / 2) {
+            // to avoid parallel refreshes we set the remainingLifetime to 0. This is racy, but we don't care because worst case we'll do two refreshes in parallel, which doesn't really hurt.
+            ((MemoryUserSession)session).setOpenIdTokenLifetime(0L);
+        }
+        return false;
     }
 }
