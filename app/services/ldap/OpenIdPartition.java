@@ -125,11 +125,10 @@ public class OpenIdPartition extends AbstractPartition {
 
     @Override
     public EntryFilteringCursor search(SearchOperationContext searchContext) throws LdapException {
-        logger.info(null, "search '" + searchContext.getDn().toString() + "' with filter '" + searchContext.getFilter() + "'");
-        final Service service = getServiceFromPrincipal(searchContext.getEffectivePrincipal());
-        Rdn serviceRdn = new Rdn(schemaManager, "ou", service.getId());
-
+        long start = System.currentTimeMillis();
         try {
+            final Service service = getServiceFromPrincipal(searchContext.getEffectivePrincipal());
+            Rdn serviceRdn = new Rdn(schemaManager, "ou", service.getId());
             Evaluator evaluator = evaluatorBuilder.build(null, searchContext.getFilter());
 
             // If the search directly matches an entry then return that
@@ -174,6 +173,8 @@ public class OpenIdPartition extends AbstractPartition {
         } catch (Exception e) {
             logger.error(null, e.getMessage(), e);
             throw e;
+        } finally {
+            logger.info(null, "search '" + searchContext.getDn().toString() + "' with filter '" + searchContext.getFilter() + "' took " + (System.currentTimeMillis() - start) + " ms");
         }
     }
 
@@ -217,14 +218,15 @@ public class OpenIdPartition extends AbstractPartition {
 
     @Override
     public Entry lookup(LookupOperationContext lookupContext) throws LdapException {
-        logger.info(null, "lookup '" + lookupContext.getDn().toString() + "'");
-        final Service service = getServiceFromPrincipal(lookupContext.getEffectivePrincipal());
-
+        long start = System.currentTimeMillis();
         try {
+            final Service service = getServiceFromPrincipal(lookupContext.getEffectivePrincipal());
             return lookupInternal(service, lookupContext);
         } catch (Exception e) {
             logger.error(null, e.getMessage(), e);
             throw e;
+        } finally {
+            logger.info(null, "lookup '" + lookupContext.getDn().toString() + "' took " + (System.currentTimeMillis() - start) + " ms");
         }
     }
 
