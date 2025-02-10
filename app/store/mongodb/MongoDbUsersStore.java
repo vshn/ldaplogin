@@ -50,7 +50,9 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
     @Override
     public User getByUid(String uid) {
         MongoDbUser user = query().filter(Filters.eq("uid", uid)).first();
-        user.setKey(mongoDb.getEncryptionKey());
+        if (user != null) {
+            user.setKey(mongoDb.getEncryptionKey());
+        }
         return user;
     }
 
