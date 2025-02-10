@@ -28,6 +28,8 @@ import javax.inject.Inject;
 import javax.naming.InvalidNameException;
 import java.io.File;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class OpenIdPartition extends AbstractPartition {
 
@@ -131,6 +133,10 @@ public class OpenIdPartition extends AbstractPartition {
             Rdn serviceRdn = new Rdn(schemaManager, "ou", service.getId());
             Evaluator evaluator = evaluatorBuilder.build(null, searchContext.getFilter());
 
+            // First cache the groups, we'll need them many times
+            List<? extends Group> groupsList = groupsStore.getAll().toList();
+            Map<String, Group> groupsLookup = groupsList.stream().collect(Collectors.toMap(g -> g.getPath(), g -> g));
+
             // If the search directly matches an entry then return that
             Entry lookupEntry = lookupInternal(service, new LookupOperationContext(searchContext.getSession(), searchContext.getDn(), searchContext.getReturningAttributesString()));
             if (lookupEntry != null) {
@@ -145,7 +151,7 @@ public class OpenIdPartition extends AbstractPartition {
                     || (searchContext.getScope() == SearchScope.ONELEVEL && searchContext.getDn().equals(peopleDn))
                     || (searchContext.getScope() == SearchScope.SUBTREE && searchContext.getDn().isAncestorOf(servicePeopleDn))) {
                 usersStore.getByGroupPath(service.getGroup())
-                    .map(u -> entryFromUser(u, service, false))
+                    .map(u -> entryFromUser(u, service, groupsLookup::get, false))
                     .filter(e -> evaluate(evaluator, e))
                     .forEach(entries::add);
             }
@@ -154,7 +160,7 @@ public class OpenIdPartition extends AbstractPartition {
             if (searchContext.getDn().equals(serviceGroupsDn)
                     || (searchContext.getScope() == SearchScope.ONELEVEL && searchContext.getDn().equals(groupsDn))
                     || (searchContext.getScope() == SearchScope.SUBTREE && searchContext.getDn().isAncestorOf(serviceGroupsDn))) {
-                groupsStore.getAll()
+                groupsList.stream()
                     .map(g -> entryFromGroup(g, service))
                     .filter(e -> evaluate(evaluator, e))
                     .forEach(entries::add);
@@ -201,9 +207,8 @@ public class OpenIdPartition extends AbstractPartition {
         Service userService = service == null ? getServiceFromUserDn(lookupContext.getDn()) : service;
         User user = getUserByDn(lookupContext.getDn(), userService);
         if (user != null) {
-            return entryFromUser(user, userService, true);
+            return entryFromUser(user, userService, groupsStore::getByPath, true);
         }
-
 
         // Either search for a group in the given service context or extract the service context from the Dn
         Service groupService = service == null ? getServiceFromGroupsDn(lookupContext.getDn()) : service;
@@ -266,7 +271,7 @@ public class OpenIdPartition extends AbstractPartition {
         throw new IllegalStateException("not implemented");
     }
 
-    private Entry entryFromUser(User user, Service service, boolean includePwHashes) {
+    private Entry entryFromUser(User user, Service service, Function<String, Group> groupByPath, boolean includePwHashes) {
         Entry entry = new DefaultEntry(schemaManager, userDn(user, service));
         entry.put("uid", user.getUid());
         entry.put("mail", user.getEmail());
@@ -285,7 +290,7 @@ public class OpenIdPartition extends AbstractPartition {
         }
         entry.put("objectClass", "inetOrgPerson", "inetUser", "mailRecipient", "organizationalPerson", "person", "top", "groupMember");
         String[] groups = user.getGroupPaths().stream()
-                .map(groupsStore::getByPath)
+                .map(groupByPath::apply)
                 .filter(Objects::nonNull)
                 .map(g -> groupDn(g, service))
                 .map(Dn::toString)
