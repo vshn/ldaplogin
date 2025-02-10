@@ -9,6 +9,13 @@ function getCsrfToken() {
     return "";
 }
 
+async function writeClipboardText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (error) {
+    console.error(error.message);
+  }
+}
 
 document.addEventListener("DOMContentLoaded", function(event) {
     var serviceLinks = document.getElementsByTagName("a");
@@ -24,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
             fetch ('/dynamicPwGen', options)
             .then(response => response.json())
             .then(body => {
-                navigator.clipboard.writeText(body.pw);
+                writeClipboardText(body.pw);
                 window.location.href=event.target.href;
             }).catch(error => {
                 console.log(error);
