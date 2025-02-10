@@ -8,12 +8,15 @@ import play.mvc.*;
 import services.OpenId;
 import store.ServicesStore;
 import store.UsersStore;
+import util.CustomLogger;
 import util.InputUtils;
 
 import javax.inject.Inject;
 import java.util.List;
 
 public class HomeController extends Controller {
+
+    private final CustomLogger logger = new CustomLogger(this.getClass());
 
     @Inject
     private UsersStore usersStore;
@@ -43,6 +46,7 @@ public class HomeController extends Controller {
         }
 
         String password = usersStore.generateDynamicPassword(user, service);
+        logger.info(request, user + " generated new dynamic password for service " + service);
         return ok(Json.newObject().put("pw", password));
     }
 
@@ -55,6 +59,7 @@ public class HomeController extends Controller {
         }
 
         String password = usersStore.generateStaticPassword(user, service);
+        logger.info(request, user + " generated new static password for service " + service);
         return ok(Json.newObject().put("pw", password));
     }
 }
