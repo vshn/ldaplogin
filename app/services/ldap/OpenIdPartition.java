@@ -283,7 +283,7 @@ public class OpenIdPartition extends AbstractPartition {
             entry.put("mailQuota", "" + user.getEmailQuota());
         }
         if (includePwHashes) {
-            byte[][] activePasswords = user.getActivePasswords(service.getId(), openId);
+            byte[][] activePasswords = user.getActivePasswords(service, openId);
             if (activePasswords.length > 0) {
                 entry.put("userPassword", activePasswords);
             }
