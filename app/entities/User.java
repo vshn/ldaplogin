@@ -69,7 +69,7 @@ public interface User {
         // we just find the newest session and make sure it's still active.
         if (openId.validateUserSession(null, this, getNewestSession())) {
             for (DynamicPassword dynamicPassword : servicePasswords.getDynamicPasswords()) {
-                if (dynamicPassword.getTimestamp() > (now - service.getDynamicPasswordExpires())) {
+                if (dynamicPassword.getTimestamp() > (now - service.getDynamicPasswordExpires() * 1000L)) {
                     activePasswords.add(dynamicPassword.getHash());
                 }
             }
