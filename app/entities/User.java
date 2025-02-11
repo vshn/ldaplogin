@@ -1,6 +1,5 @@
 package entities;
 
-import entities.mongodb.MongoDbUserSession;
 import services.OpenId;
 import util.Config;
 
@@ -84,6 +83,8 @@ public interface User {
             if (servicePasswords.getStaticPwHash() != null) {
                 activePasswords.add(servicePasswords.getStaticPwHash());
             }
+        } else {
+            System.out.println("Can't validate user session for " + this.getUid() + ", no passwords added to list");
         }
 
         byte[][] pws = new byte[activePasswords.size()][];
