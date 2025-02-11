@@ -2,6 +2,7 @@ package store.mongodb;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.mongodb.client.result.UpdateResult;
+import dev.morphia.DeleteOptions;
 import dev.morphia.UpdateOptions;
 import dev.morphia.query.filters.Filters;
 import dev.morphia.query.updates.UpdateOperator;
@@ -221,13 +222,13 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
             for (Service service : ServicesStore.getAll()) {
                 ops[i++] = UpdateOperators.pull("servicePasswords." + service.getId() + ".dynamicPasswords", Filters.lt("timestamp", now - service.getDynamicPasswordExpires()*1000L));
             }
-            query().update(new UpdateOptions(), ops);
+            query().update(new UpdateOptions().multi(true), ops);
         }
 
         // remove users entirely
-        query().filter(Filters.lt("lastActive", deleteUsers), Filters.nin("groupPaths", User.NEVER_EXPIRES_GROUPS)).delete();
+        query().filter(Filters.lt("lastActive", deleteUsers), Filters.nin("groupPaths", User.NEVER_EXPIRES_GROUPS)).delete(new DeleteOptions().multi(true));
 
         // remove sessions if their openId tokens have expired
-        query().filter(Filters.lt("sessions.openIdTokenExpiry", deleteSessions)).update(new UpdateOptions(), UpdateOperators.pull("sessions", Filters.lt("openIdTokenExpiry", deleteSessions)));
+        query().filter(Filters.lt("sessions.openIdTokenExpiry", deleteSessions)).update(new UpdateOptions().multi(true), UpdateOperators.pull("sessions", Filters.lt("openIdTokenExpiry", deleteSessions)));
     }
 }
