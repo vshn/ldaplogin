@@ -54,10 +54,10 @@ public interface User {
         return newest;
     }
 
-    default byte[][] getActivePasswords(String serviceId, OpenId openId) {
+    default byte[][] getActivePasswords(Service service, OpenId openId) {
         List<byte[]> activePasswords = new ArrayList<>();
 
-        ServicePasswords servicePasswords = getServicePasswords(serviceId);
+        ServicePasswords servicePasswords = getServicePasswords(service.getId());
         if (servicePasswords == null) {
             return new byte[0][];
         }
@@ -69,7 +69,7 @@ public interface User {
         // we just find the newest session and make sure it's still active.
         if (openId.validateUserSession(null, this, getNewestSession())) {
             for (DynamicPassword dynamicPassword : servicePasswords.getDynamicPasswords()) {
-                if (dynamicPassword.getTimestamp() > (now - ServicePasswords.DYNAMIC_PASSWORD_EXPIRES)) {
+                if (dynamicPassword.getTimestamp() > (now - service.getDynamicPasswordExpires())) {
                     activePasswords.add(dynamicPassword.getHash());
                 }
             }
