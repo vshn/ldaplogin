@@ -47,11 +47,32 @@ document.addEventListener("DOMContentLoaded", function(event) {
             var serviceId = event.target.parentElement.id;
             var currentStaticPassword = event.target.parentElement.getElementsByClassName("current-static-password")[0];
             var generateStaticPassword = event.target.parentElement.getElementsByClassName("generate-static-password")[0]
-            if (localStorage.getItem("static-password-" + serviceId)) {
-                currentStaticPassword.innerHTML = localStorage.getItem("static-password-" + serviceId);
+            var pw = localStorage.getItem("static-password-" + serviceId);
+            if (pw) {
+                // we need to verify if the static password is still valid. We don't want to show invalid passwords to avoid confusion.
+                formData = new FormData();
+                formData.append("csrfToken", getCsrfToken());
+                formData.append("serviceId", serviceId);
+                formData.append("pw", pw);
+                let options = {
+                    method: 'POST',
+                    body: new URLSearchParams(formData)
+                };
+                fetch ('/staticPwCheck', options)
+                .then(response => response.json())
+                .then(body => {
+                    if (body.check) {
+                        currentStaticPassword.innerHTML = pw;
+                    }
+                    currentStaticPassword.style.display="block";
+                    generateStaticPassword.style.display="block";
+                }).catch(error => {
+                    console.log(error);
+                });
+            } else {
+                currentStaticPassword.style.display="block";
+                generateStaticPassword.style.display="block";
             }
-            currentStaticPassword.style.display="block";
-            generateStaticPassword.style.display="block";
         }
     }
 

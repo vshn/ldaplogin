@@ -1,8 +1,9 @@
-@(services: List[entities.Service],
+@(  services: List[entities.Service],
+    user: entities.User,
 )
 
 @main("LDAP Login") {
-    <h1>Login</h1>
+    <h1>Hi @user.getFirstName @user.getLastName</h1>
     <div class="hint">Click a service, enter your user name and paste (CTRL+V) your temporary password</div>
     <br />
     @for(service <- services) {

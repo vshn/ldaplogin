@@ -14,7 +14,7 @@ public class MongoDbServicePasswords implements ServicePasswords {
     private List<MongoDbDynamicPassword> dynamicPasswords = new ArrayList<>();
 
     public void addDynamicPassword(MongoDbDynamicPassword dynamicPassword) {
-        dynamicPasswords.add((MongoDbDynamicPassword)dynamicPassword);
+        dynamicPasswords.add(dynamicPassword);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package entities;
 
-import util.Config;
 import java.util.List;
 
 public interface ServicePasswords {

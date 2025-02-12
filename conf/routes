@@ -6,3 +6,4 @@ GET     /login/callback             controllers.LoginController.loginCallback(re
 GET     /                           controllers.HomeController.index(request: Request)
 POST    /dynamicPwGen               controllers.HomeController.dynamicPwGen(request: Request)
 POST    /staticPwGen                controllers.HomeController.staticPwGen(request: Request)
+POST    /staticPwCheck              controllers.HomeController.staticPwCheck(request: Request)
