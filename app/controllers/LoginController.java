@@ -35,14 +35,13 @@ public class LoginController extends Controller {
         // Get the identityToken. We only need it for a transparent Keycloak logout
         User user = usersStore.getFromRequest(request, openId);
         UserSession session = user == null ? null : user.getSessionById(InputUtils.getSessionIdFromRequest(request));
-        String identityToken = session == null ? null : session.getOpenIdIdentityToken();
         if (session != null) {
-            usersStore.logout(user, session);
+            usersStore.logoutWebOnly(user, session);
         }
-        logger.info(request, "logged out");
+        logger.info(request, "logged out from web session");
         Cookie c1 = Cookie.builder("sessionId", "").withMaxAge(Duration.ZERO).build();
         Cookie c2 = Cookie.builder("csrfToken", "").withMaxAge(Duration.ZERO).withHttpOnly(false).build();
-        return redirect(openId.getUrlLogout(AbsoluteUrlGenerator.self(request, "/loggedout"), identityToken)).withCookies(c1, c2);
+        return redirect(routes.LoginController.loggedout()).withCookies(c1, c2);
     }
 
     public Result loggedout(Http.Request request) {

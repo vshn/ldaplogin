@@ -113,9 +113,9 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
     }
 
     @Override
-    public MongoDbUserSession createSession(User user, String id, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
+    public MongoDbUserSession createSession(User user, String id, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
         MongoDbUser mongoDbUser = (MongoDbUser)user;
-        MongoDbUserSession session = new MongoDbUserSession(getEncryptionKey(), id, openIdIdentityToken, openIdAccessToken, openIdRefreshToken, openIdTokenExpiry);
+        MongoDbUserSession session = new MongoDbUserSession(getEncryptionKey(), id, openIdAccessToken, openIdRefreshToken, openIdTokenExpiry);
         mongoDbUser.addSession(session);
         query(mongoDbUser).update(new UpdateOptions(), UpdateOperators.push("sessions", session));
         return session;
@@ -166,6 +166,14 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
         }
 
         return password;
+    }
+
+    @Override
+    public void logoutWebOnly(User user, UserSession session) {
+        // We do not actually delete the session, instead we just remove the hashedId. This means that the session is
+        // unreachable via web, but the OAuth credentials can still be used for updating the user information
+        query().filter(Filters.eq("sessions.hashedId", session.getHashedId())).update(new UpdateOptions(), UpdateOperators.unset("sessions.$.hashedId"));
+        ((MongoDbUserSession)session).removeHashedId();
     }
 
     @Override

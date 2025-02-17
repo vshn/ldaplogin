@@ -2,6 +2,8 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 
 GET     /login                      controllers.LoginController.login(request: Request)
 GET     /login/callback             controllers.LoginController.loginCallback(request: Request, state ?= null, code ?= null)
+GET     /logout                     controllers.LoginController.logout(request: Request)
+GET     /loggedout                  controllers.LoginController.loggedout(request: Request)
 
 GET     /                           controllers.HomeController.index(request: Request)
 POST    /dynamicPwGen               controllers.HomeController.dynamicPwGen(request: Request)

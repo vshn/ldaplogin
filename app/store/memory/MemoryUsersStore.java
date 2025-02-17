@@ -1,11 +1,6 @@
 package store.memory;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.mongodb.client.result.UpdateResult;
-import dev.morphia.UpdateOptions;
-import dev.morphia.query.filters.Filters;
-import dev.morphia.query.updates.UpdateOperator;
-import dev.morphia.query.updates.UpdateOperators;
 import entities.OpenIdUser;
 import entities.Service;
 import entities.User;
@@ -14,6 +9,7 @@ import entities.memory.MemoryDynamicPassword;
 import entities.memory.MemoryServicePasswords;
 import entities.memory.MemoryUser;
 import entities.memory.MemoryUserSession;
+import entities.mongodb.MongoDbUserSession;
 import org.apache.directory.api.ldap.model.constants.LdapSecurityConstants;
 import org.apache.directory.api.ldap.model.password.PasswordUtil;
 import play.mvc.Http;
@@ -105,9 +101,9 @@ public class MemoryUsersStore implements UsersStore {
     }
 
     @Override
-    public UserSession createSession(User user, String id, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
+    public UserSession createSession(User user, String id, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
         MemoryUser memoryUser = (MemoryUser)user;
-        MemoryUserSession session = new MemoryUserSession(id, openIdIdentityToken, openIdAccessToken, openIdRefreshToken, openIdTokenExpiry);
+        MemoryUserSession session = new MemoryUserSession(id, openIdAccessToken, openIdRefreshToken, openIdTokenExpiry);
         memoryUser.addSession(session);
         return session;
     }
@@ -153,6 +149,11 @@ public class MemoryUsersStore implements UsersStore {
         }
 
         return password;
+    }
+
+    @Override
+    public void logoutWebOnly(User user, UserSession session) {
+        ((MemoryUserSession)session).removeHashedId();
     }
 
     @Override

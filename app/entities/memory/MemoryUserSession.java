@@ -7,15 +7,13 @@ import java.util.Objects;
 
 public class MemoryUserSession implements UserSession {
     private String hashedId;
-    private String openIdIdentityToken;
     private String openIdAccessToken;
     private String openIdRefreshToken;
     private Long openIdTokenExpiry;
     private Long openIdTokenLifetime;
 
-    public MemoryUserSession(String id, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
+    public MemoryUserSession(String id, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
         this.hashedId = new SimpleSHA512().hash(id);
-        this.openIdIdentityToken = openIdIdentityToken;
         this.openIdAccessToken = openIdAccessToken;
         this.openIdRefreshToken = openIdRefreshToken;
         this.openIdTokenExpiry = openIdTokenExpiry;
@@ -27,9 +25,8 @@ public class MemoryUserSession implements UserSession {
         return hashedId;
     }
 
-    @Override
-    public String getOpenIdIdentityToken() {
-        return openIdIdentityToken;
+    public void removeHashedId() {
+        this.hashedId = null;
     }
 
     @Override

@@ -72,7 +72,7 @@ public class MongoDbUser implements MongoDbEntity, User {
     @Override
     public MongoDbUserSession getSessionById(String sessionId) {
         String hashedId = new SimpleSHA512().hash(sessionId);
-        return sessions.stream().filter(s -> s.getHashedId().equals(hashedId)).findFirst().orElse(null);
+        return sessions.stream().filter(s -> hashedId.equals(s.getHashedId())).findFirst().orElse(null);
     }
 
     public void setKey(byte[] key) {
