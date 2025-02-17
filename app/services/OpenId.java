@@ -54,20 +54,9 @@ public class OpenId {
         return credential;
     }
 
-
-    public String getUrlLogout(String returnUrl, String idTokenHint) {
-        // With Keycloak 18.0.0+ we can only use post_logout_redirect_uri together with the original ID token received upon login.
-        // If that original ID token is not available we can only provide a fall-back with an explicit logout button and no redirect back.
-        if (idTokenHint == null) {
-            return openIdConfig == null ? null : openIdConfig.getUrlLogout();
-        } else {
-            return openIdConfig == null ? null : openIdConfig.getUrlLogout() + "?id_token_hint=" + Encode.url(idTokenHint) + "&post_logout_redirect_uri=" + Encode.url(returnUrl);
-        }
-    }
-
     public String getOpenIdRedirectUrl(Http.Request request, String state) {
         if (openIdConfig != null) {
-            return openIdConfig.getFlow().newAuthorizationUrl().setRedirectUri(openIdCallbackUrl(request)).setState(state).build();
+            return openIdConfig.getFlow().newAuthorizationUrl().setRedirectUri(openIdCallbackUrl(request)).setState(state).setScopes(Set.of("openid", "offline_access")).build();
         }
         return null;
     }
@@ -104,7 +93,7 @@ public class OpenId {
 
         OpenIdUser openIdUser = OpenIdUser.fromTokenResponse(tokenResponse);
         if (openIdUser == null) {
-            throw new NotAllowedException("invalid token response");
+            throw new NotAllowedException("Invalid token response");
         }
         if (InputUtils.trimToNull(openIdUser.getUid()) == null) {
             throw new NotAllowedException("OpenID user must have uid set");
@@ -140,9 +129,9 @@ public class OpenId {
         groupsStore.updateMetadata(openIdUser.getGroupsMetadata());
 
         String sessionId = IdGenerator.generateSessionId();
-        usersStore.createSession(user, sessionId, openIdUser.getIdToken(), cred.getAccessToken(), cred.getRefreshToken(), cred.getExpirationTimeMilliseconds());
+        usersStore.createSession(user, sessionId, cred.getAccessToken(), cred.getRefreshToken(), cred.getExpirationTimeMilliseconds());
 
-        logger.info(request, user + " logged in" + ((created || updated) ? (", shadow user " + (created ? "created" : "updated")) : ""));
+        logger.info(request, user + " logged in" + ((created || updated) ? (", shadow user " + (created ? "created" : "updated")) : "") + ", refresh_expires_in " + tokenResponse.get("refresh_expires_in"));
         return Pair.of(user, sessionId);
     }
 

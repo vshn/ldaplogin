@@ -21,13 +21,15 @@ public interface UsersStore {
 
     Stream<? extends User> getByGroupPath(String groupPath);
 
-    UserSession createSession(User user, String sessionId, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry);
+    UserSession createSession(User user, String sessionId, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry);
 
     byte[] getEncryptionKey();
 
     String generateDynamicPassword(User user, Service service);
 
     String generateStaticPassword(User user, Service service);
+
+    void logoutWebOnly(User user, UserSession session);
 
     void logout(User user, UserSession session);
 

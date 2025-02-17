@@ -16,8 +16,6 @@ public class MongoDbUserSession implements UserSession {
 
     @Indexed(options = @IndexOptions(unique = true, sparse = true))
     private String hashedId;
-    private String openIdIdentityTokenEnc;
-    private String openIdIdentityTokenIv;
     private String openIdAccessTokenEnc;
     private String openIdAccessTokenIv;
     private String openIdRefreshTokenEnc;
@@ -30,9 +28,6 @@ public class MongoDbUserSession implements UserSession {
     private byte[] key;
 
     @Transient
-    private String openIdIdentityTokenDecrypted;
-
-    @Transient
     private String openIdAccessTokenDecrypted;
 
     @Transient
@@ -42,16 +37,9 @@ public class MongoDbUserSession implements UserSession {
         // constructor for Morphia
     }
 
-    public MongoDbUserSession(byte[] key, String id, String openIdIdentityToken, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
+    public MongoDbUserSession(byte[] key, String id, String openIdAccessToken, String openIdRefreshToken, Long openIdTokenExpiry) {
         this.key = key;
         this.hashedId = new SimpleSHA512().hash(id);
-
-        if (openIdIdentityToken != null) {
-            SimpleAes aes = new SimpleAes(key);
-            this.openIdIdentityTokenIv = SimpleAes.generateIvHex();
-            this.openIdIdentityTokenEnc = aes.encryptHex(openIdIdentityTokenIv, openIdIdentityToken);
-            this.openIdIdentityTokenDecrypted = openIdIdentityToken;
-        }
 
         if (openIdAccessToken != null) {
             SimpleAes aes = new SimpleAes(key);
@@ -80,13 +68,8 @@ public class MongoDbUserSession implements UserSession {
         return hashedId;
     }
 
-    @Override
-    public String getOpenIdIdentityToken() {
-        if (openIdIdentityTokenDecrypted == null) {
-            SimpleAes aes = new SimpleAes(key);
-            openIdIdentityTokenDecrypted = aes.decryptHex(openIdIdentityTokenIv, openIdIdentityTokenEnc);
-        }
-        return openIdIdentityTokenDecrypted;
+    public void removeHashedId() {
+        this.hashedId = null;
     }
 
     @Override
