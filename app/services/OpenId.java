@@ -42,7 +42,10 @@ public class OpenId {
 
 
     public Credential getCredentialFromSession(UserSession session, CredentialRefreshListener credentialRefreshListener) {
-        Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod()).setJsonFactory(new GsonFactory()).setTransport(new NetHttpTransport()).setRefreshListeners(Set.of(credentialRefreshListener));
+        Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod());
+        builder.setJsonFactory(new GsonFactory());
+        builder.setTransport(new NetHttpTransport());
+        builder.setRefreshListeners(Set.of(credentialRefreshListener));
         if (openIdConfig != null) {
             builder.setClientAuthentication(new ClientParametersAuthentication(openIdConfig.getClientId(), openIdConfig.getSecret()));
             builder.setTokenServerUrl(new GenericUrl(openIdConfig.getUrlToken()));
@@ -72,10 +75,10 @@ public class OpenId {
         // We could also work with timestamps and signatures (HMAC), but that wouldn't increase security much
         // because the user who's trying to log in could still use the same 'state' more than once. In order to ensure
         // single use only we'd have to store the state in the DB, which seems like overkill.
-        if (!request.getCookie("openIdLoginState").isPresent()) {
+        if (!request.cookie("openIdLoginState").isPresent()) {
             throw new NotAllowedException("Your login state has expired. Please try again.");
         }
-        if (state == null || !state.equals(request.getCookie("openIdLoginState").get().value())) {
+        if (state == null || !state.equals(request.cookie("openIdLoginState").get().value())) {
             throw new NotAllowedException("openIdLoginState cookie does not match 'state' parameter. Please try again.");
         }
 
@@ -207,7 +210,6 @@ public class OpenId {
         private final String secret;
         private final String urlAuth;
         private final String urlToken;
-        private final String urlLogout;
         private final AuthorizationCodeFlow flow;
 
         protected OpenIdConfig() {
@@ -226,11 +228,6 @@ public class OpenId {
             this.urlToken = Config.Option.OPENID_URL_TOKEN.get();
             if (this.urlToken == null) {
                 throw new IllegalArgumentException("Environment variable " + Config.Option.OPENID_URL_TOKEN + " is not set");
-            }
-
-            this.urlLogout = Config.Option.OPENID_URL_LOGOUT.get();
-            if (this.urlToken == null) {
-                throw new IllegalArgumentException("Environment variable " + Config.Option.OPENID_URL_LOGOUT + " is not set");
             }
 
             this.flow = new AuthorizationCodeFlow.Builder(
@@ -260,10 +257,6 @@ public class OpenId {
 
         public String getUrlToken() {
             return urlToken;
-        }
-
-        public String getUrlLogout() {
-            return urlLogout;
         }
     }
 }

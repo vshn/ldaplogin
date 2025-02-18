@@ -15,23 +15,21 @@ public class OpenIdUser {
     private Integer emailQuota;
     private boolean emailVerified;
     private List<String> groupPaths = new ArrayList<>();
-    private String idToken;
     private List<GroupsMetadata> groupsMetadata = new ArrayList<>();
 
     public static OpenIdUser fromTokenResponse(TokenResponse tokenResponse) {
-        String idToken;
         IdToken.Payload idTokenPayload;
         try {
-            idToken = (String)tokenResponse.get("id_token");
+            String idToken = (String)tokenResponse.get("id_token");
             idTokenPayload = IdToken.parse(new GsonFactory(), idToken).getPayload();
         } catch (Exception e) {
             return null;
         }
-        return new OpenIdUser(idToken, idTokenPayload);
+        return new OpenIdUser(idTokenPayload);
     }
 
-    private OpenIdUser(String idToken, IdToken.Payload idTokenPayload) {
-        this.idToken = idToken;
+    @SuppressWarnings("unchecked")
+    private OpenIdUser(IdToken.Payload idTokenPayload) {
         try { uid = InputUtils.trimToNull((String) idTokenPayload.get("preferred_username")); } catch (Exception e) {}
         try { firstName = InputUtils.trimToNull((String) idTokenPayload.get("given_name")); } catch (Exception e) {}
         try { lastName = InputUtils.trimToNull((String) idTokenPayload.get("family_name")); } catch (Exception e) {}
@@ -84,9 +82,5 @@ public class OpenIdUser {
 
     public List<GroupsMetadata> getGroupsMetadata() {
         return groupsMetadata;
-    }
-
-    public String getIdToken() {
-        return idToken;
     }
 }
