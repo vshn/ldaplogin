@@ -24,7 +24,6 @@ public class Config {
         OPENID_URL_REALM, //
         OPENID_URL_TOKEN, //
         OPENID_URL_AUTH, //
-        OPENID_URL_LOGOUT, //
         SERVICES, //
         USER_DYNAMIC_PASSWORD_EXPIRES, //
         USER_EXPIRES, //
