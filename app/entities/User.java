@@ -25,6 +25,8 @@ public interface User {
 
     boolean isEmailVerified();
 
+    List<String> getAlias();
+
     String getFirstName();
 
     String getLastName();
