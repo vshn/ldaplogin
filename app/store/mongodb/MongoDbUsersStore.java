@@ -79,6 +79,10 @@ public class MongoDbUsersStore extends MongoDbStore<MongoDbUser> implements User
             mongoDbUser.setEmailQuota(openIdUser.getEmailQuota());
             updateOperators.add(UpdateOperators.set("emailQuota", mongoDbUser.getEmailQuota()));
         }
+        if (!Objects.equals(mongoDbUser.getAlias(), openIdUser.getAlias())) {
+            mongoDbUser.setAlias(openIdUser.getAlias());
+            updateOperators.add(UpdateOperators.set("alias", mongoDbUser.getAlias()));
+        }
         if (!Objects.equals(mongoDbUser.getFirstName(), openIdUser.getFirstName())) {
             mongoDbUser.setFirstName(openIdUser.getFirstName());
             updateOperators.add(UpdateOperators.set("firstName", mongoDbUser.getFirstName()));

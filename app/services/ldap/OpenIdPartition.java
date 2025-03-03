@@ -275,6 +275,7 @@ public class OpenIdPartition extends AbstractPartition {
         Entry entry = new DefaultEntry(schemaManager, userDn(user, service));
         entry.put("uid", user.getUid());
         entry.put("mail", user.getEmail());
+        entry.put("alias", user.getAlias().toArray(String[]::new));
         entry.put("givenName", user.getFirstName());
         entry.put("sn", user.getLastName());
         entry.put("displayName", user.getFirstName() + " " + user.getLastName());

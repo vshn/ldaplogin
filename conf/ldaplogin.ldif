@@ -58,3 +58,13 @@ m-oid: 1.3.6.1.4.1.666666.5.1
 m-name: Kind
 m-syntax: 1.3.6.1.4.1.1466.115.121.1.15
 m-equality: caseIgnoreMatch
+
+dn: m-oid=1.3.6.1.4.1.666666.6.1, ou=attributetypes, cn=ldaplogin, ou=schema
+objectclass: metaAttributeType
+objectclass: metaTop
+objectclass: top
+m-oid: 1.3.6.1.4.1.666666.6.1
+m-name: alias
+m-singlevalue: FALSE
+m-syntax: 1.3.6.1.4.1.1466.115.121.1.15
+m-equality: caseIgnoreMatch

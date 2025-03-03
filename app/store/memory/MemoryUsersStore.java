@@ -9,7 +9,6 @@ import entities.memory.MemoryDynamicPassword;
 import entities.memory.MemoryServicePasswords;
 import entities.memory.MemoryUser;
 import entities.memory.MemoryUserSession;
-import entities.mongodb.MongoDbUserSession;
 import org.apache.directory.api.ldap.model.constants.LdapSecurityConstants;
 import org.apache.directory.api.ldap.model.password.PasswordUtil;
 import play.mvc.Http;
@@ -78,6 +77,10 @@ public class MemoryUsersStore implements UsersStore {
         }
         if (memoryUser.isEmailVerified() != openIdUser.isEmailVerified()) {
             memoryUser.setEmailVerified(openIdUser.isEmailVerified());
+            updated = true;
+        }
+        if (!Objects.equals(memoryUser.getAlias(), openIdUser.getAlias())) {
+            memoryUser.setAlias(openIdUser.getAlias());
             updated = true;
         }
         if (!Objects.equals(memoryUser.getFirstName(), openIdUser.getFirstName())) {

@@ -14,6 +14,7 @@ public class OpenIdUser {
     private String email;
     private Integer emailQuota;
     private boolean emailVerified;
+    private List<String> alias = new ArrayList<>();
     private List<String> groupPaths = new ArrayList<>();
     private List<GroupsMetadata> groupsMetadata = new ArrayList<>();
 
@@ -36,6 +37,8 @@ public class OpenIdUser {
         try { email = InputUtils.trimToNull((String) idTokenPayload.get("email")); } catch (Exception e) {}
         try { emailQuota = InputUtils.toInteger("" + idTokenPayload.get("emailQuota")); } catch (Exception e) {}
         try { emailVerified = Boolean.TRUE.equals(idTokenPayload.get("email_verified")); } catch (Exception e) {}
+        try { alias = (List<String>)idTokenPayload.get("alias"); } catch (Exception e) {}
+        Collections.sort(alias);
         // The groups only exist if you have a groups mapper configured.
         try { groupPaths = (List<String>) idTokenPayload.get("groups"); } catch (Exception e) {}
         try {
@@ -66,6 +69,10 @@ public class OpenIdUser {
 
     public boolean isEmailVerified() {
         return emailVerified;
+    }
+
+    public List<String> getAlias() {
+        return alias;
     }
 
     public String getFirstName() {

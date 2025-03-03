@@ -27,6 +27,8 @@ public class MongoDbUser implements MongoDbEntity, User {
 
     private boolean emailVerified;
 
+    private List<String> alias = new ArrayList<>();
+
     @Indexed
     private List<String> groupPaths = new ArrayList<>();
 
@@ -48,6 +50,7 @@ public class MongoDbUser implements MongoDbEntity, User {
         this.email = openIdUser.getEmail();
         this.emailQuota = openIdUser.getEmailQuota();
         this.emailVerified = openIdUser.isEmailVerified();
+        this.alias = openIdUser.getAlias();
         this.groupPaths = openIdUser.getGroupPaths();
         lastActive = System.currentTimeMillis();
     }
@@ -111,6 +114,15 @@ public class MongoDbUser implements MongoDbEntity, User {
 
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    @Override
+    public List<String> getAlias() {
+        return alias;
+    }
+
+    public void setAlias(List<String> alias) {
+        this.alias = alias;
     }
 
     @Override

@@ -28,7 +28,7 @@ You should probably configure a Keycloak-wide Client scope called `groups` which
 * Make sure the following are on: 'Full group path', 'Add to ID token', 'Add to access token', 'Add to userinfo'
 * Save
 
-Now that you have the global Client scope configured, you can edit your client.
+Now that you have the global Client scope configured you can edit your client.
 
 * Go to 'Clients'
 * Find your ldaplogin client
@@ -61,7 +61,7 @@ Depending on your use cases it may make sense to configure a Keycloak-wide Clien
 * Make sure the following are on: 'Full group path', 'Add to ID token', 'Add to access token', 'Add to userinfo'
 * Save
 
-Now that you have the global Client scope configured, you can edit your client.
+Now that you have the global Client scope configured you can edit your client.
 
 * Go to 'Clients'
 * Find your ldaplogin client
@@ -75,6 +75,35 @@ Now test the result.
 * Select a user in the 'Users' input field. The user must have an "emailQuota" attribute.
 * Click 'Generated user info'
 * The resulting JSON needs to have a field `emailQuota`.
+
+## `alias` field
+
+Depending on your use cases you may want to store aliases in user attributes and provide them in the ID token.
+
+Note that we're using the LDAP convention of calling the field "alias" (singular) despite being an array with possibly multiple values.
+
+Managing the user attribute "alias" is outside of the scope of this document.
+
+* Log in to your Keycloak instance as admin and go to your realm
+* Go to 'Client scopes'
+* Click 'Create client scope" and use the name "alias"
+* Choose Type 'Default'
+* Disable 'Display on consent screen'
+* Save
+* Go to 'Mappers'
+* Click 'Configure a new mapper'
+* Click 'User Attribute'
+* Choose Name "alias", User Atrribute "alias" and Token Claim Name "alias"
+* Make sure the following are on: 'Add to ID token', 'Add to access token', 'Add to userinfo', 'Multivalued'
+* Save
+
+Now that you have the global Client scope configured you can edit your client.
+
+* Go to 'Clients'
+* Find your ldaplogin client
+* Go to tab 'Client scopes'
+* Click 'Add client scope'
+* Find the "alias" scope and add it
 
 ## `groups_metadata` field
 
@@ -112,7 +141,7 @@ You should probably configure a Keycloak-wide Client scope called 'groups\_metad
 * Enable "Multivalued" and "Aggregate attribute values"
 * Save
 
-Now that you have the global Client scope configured, you can edit your client.
+Now that you have the global Client scope configured you can edit your client.
 
 * Go to 'Clients'
 * Find your ldaplogin client
