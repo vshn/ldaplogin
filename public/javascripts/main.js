@@ -10,11 +10,29 @@ function getCsrfToken() {
 }
 
 async function writeClipboardText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch (error) {
-    console.error(error.message);
-  }
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (error) {
+        console.error(error.message);
+    }
+}
+
+function showPwNotAvailable(serviceElement) {
+    serviceElement.getElementsByClassName("current-static-password-unavailable")[0].style.display = "block";
+    serviceElement.getElementsByClassName("static-password")[0].style.display = "none";
+    serviceElement.getElementsByClassName("generate-static-password")[0].style.display = "block";
+}
+
+function showPw(serviceElement, pw) {
+    serviceElement.getElementsByClassName("generate-static-password")[0].style.display="none";
+    serviceElement.getElementsByClassName("current-static-password-unavailable")[0].style.display="none";
+    var elements = serviceElement.getElementsByClassName("generate-static-password-confirm");
+    elements[0].style.display="none";
+    elements[1].style.display="none";
+
+    serviceElement.getElementsByClassName("current-static-password-manager")[0].style.display="block";
+    serviceElement.getElementsByClassName("current-static-password")[0].innerHTML = pw;
+    serviceElement.getElementsByClassName("current-static-password")[0].style.display="block";
 }
 
 document.addEventListener("DOMContentLoaded", function(event) {
@@ -59,8 +77,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
                         writeClipboardText(pw);
                         window.location.href=event.target.href;
                     } else {
-                        event.target.parentElement.parentElement.getElementsByClassName("current-static-password-unavailable")[0].style.display="block";
-                        event.target.parentElement.parentElement.getElementsByClassName("static-password")[0].style.display="none";
+                        showPwNotAvailable(event.target.parentElement.parentElement);
                     }
                 }).catch(error => {
                     console.log(error);
@@ -75,11 +92,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         staticPassButtons[i].onclick = function(event) {
             event.target.style.display="none";
             var serviceId = event.target.parentElement.id;
-            var staticPassword = event.target.parentElement.getElementsByClassName("static-password")[0];
-            var currentStaticPassword = event.target.parentElement.getElementsByClassName("current-static-password")[0];
-            var currentStaticPasswordUnavailable = event.target.parentElement.getElementsByClassName("current-static-password-unavailable")[0];
             var generateStaticPassword = event.target.parentElement.getElementsByClassName("generate-static-password")[0];
-            var currentStaticPasswordManager = event.target.parentElement.getElementsByClassName("current-static-password-manager")[0];
             var pw = localStorage.getItem("static-password-" + serviceId);
             if (pw) {
                 // we need to verify if the static password is still valid. We don't want to show invalid passwords to avoid confusion.
@@ -95,20 +108,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 .then(response => response.json())
                 .then(body => {
                     if (body.check) {
-                        currentStaticPassword.innerHTML = pw;
-                        currentStaticPassword.style.display="block";
-                        currentStaticPasswordManager.style.display="block";
+                        showPw(event.target.parentElement, pw);
                     } else {
-                        currentStaticPasswordUnavailable.style.display="block";
+                        showPwNotAvailable(event.target.parentElement);
                     }
                     generateStaticPassword.style.display="block";
                 }).catch(error => {
                     console.log(error);
                 });
             } else {
-                currentStaticPassword.style.display="none";
-                currentStaticPasswordUnavailable.style.display="block";
-                generateStaticPassword.style.display="block";
+                showPwNotAvailable(event.target.parentElement);
             }
         }
     }
@@ -146,16 +155,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
             fetch ('/staticPwGen', options)
             .then(response => response.json())
             .then(body => {
-                var serviceId = event.target.parentElement.parentElement.id;
-                var elements = event.target.parentElement.parentElement.getElementsByClassName("generate-static-password-confirm");
-                elements[0].style.display="none";
-                elements[1].style.display="none";
-                event.target.parentElement.parentElement.getElementsByClassName("generate-static-password")[0].style.display="none";
-                event.target.parentElement.parentElement.getElementsByClassName("current-static-password-unavailable")[0].style.display="none";
-                event.target.parentElement.parentElement.getElementsByClassName("current-static-password")[0].innerHTML = body.pw;
-                event.target.parentElement.parentElement.getElementsByClassName("current-static-password")[0].style.display="block";
-                event.target.parentElement.parentElement.getElementsByClassName("current-static-password-manager")[0].style.display="block";
-                localStorage.setItem("static-password-" + serviceId, body.pw);
+                localStorage.setItem("static-password-" + event.target.parentElement.parentElement.id, body.pw);
+                showPw(event.target.parentElement.parentElement, body.pw);
                 return false;
             }).catch(error => {
                 console.log(error);
