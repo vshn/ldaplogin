@@ -6,3 +6,7 @@ addSbtPlugin("org.playframework" % "sbt-plugin" % "3.0.5")
 // sbt "g8Scaffold form"
 addSbtPlugin("org.foundweekends.giter8" % "sbt-giter8-scaffold" % "0.16.2")
 addDependencyTreePlugin
+
+// Asset hashing and compressing
+addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.1.4")
+addSbtPlugin("com.typesafe.sbt" % "sbt-gzip" % "1.0.2")
