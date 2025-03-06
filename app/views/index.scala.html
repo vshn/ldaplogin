@@ -4,17 +4,21 @@
 
 @main("LDAP Login") {
     <h1>Hi @user.getFirstName @user.getLastName</h1>
-    <div class="hint">Click a service, enter your user name and paste (CTRL+V) your temporary password</div>
+    <div class="hint">Click a service, enter your user name and paste (CTRL+V) your password</div>
     <br />
     @for(service <- services) {
         <div id="@service.getId()">
-            <div><a href="@service.getUrl()" class="service">@service.getName()</a></div>
             @if(service.hasStaticPasswords()) {
-            <div class="static-password">Show static password</div>
-            <div class="current-static-password" style="display: none;">Your current static password cannot be shown</div>
-            <div class="generate-static-password" style="display: none;"><a href="#" class="generate-static-password-link">Generate new static password</a></div>
+            <div><a href="@service.getUrl()" class="serviceButton staticPassword">@service.getName()</a></div>
+            <div class="current-static-password-unavailable" style="display: none;">Your current password is not available.<br />You need to get it from your password manager.</div>
+            <div class="static-password">Show password</div>
+            <div class="current-static-password" style="display: none;"></div>
+            <div class="current-static-password-manager" style="display: none;">Put your password into a password manager.<br />It remains available only on this device and browser.</div>
+            <div class="generate-static-password" style="display: none;"><a href="#" class="generate-static-password-link">Generate new password</a></div>
             <div class="generate-static-password-confirm" style="display: none;">Really? You may have to change the password in various applications!</div>
             <div class="generate-static-password-confirm" style="display: none;"><a href="#" class="generate-static-password-confirm-yes">YES</a> &nbsp; <a href="#" class="generate-static-password-confirm-no">NO</a></div>
+            } else {
+            <div><a href="@service.getUrl()" class="serviceButton dynamicPassword">@service.getName()</a></div>
             }
         </div>
     }

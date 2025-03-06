@@ -15,7 +15,7 @@ div.hint {
     max-width: 350px;
 }
 
-a.service {
+a.serviceButton {
     font-size: 20px;
     color: #000000;
     text-decoration: none;
@@ -37,12 +37,24 @@ a:hover {
 
 div.static-password, div.current-static-password, div.generate-static-password, div.generate-static-password-confirm {
     color: #999999;
-    font-size: 10px;
-}
-
-div.static-password, div.current-static-password, div.generate-static-password, div.generate-static-password-confirm {
+    font-size: 14px;
     padding-top: 5px;
     padding-bottom: 5px;
+}
+
+div.current-static-password-manager, div.current-static-password-unavailable {
+    font-size: 14px;
+    font-weight: bold;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+div.current-static-password-unavailable {
+    color: red;
+}
+
+div.current-static-password {
+    font-family: monospace;
 }
 
 div.static-password {
