@@ -14,8 +14,8 @@ public class OpenIdUser {
     private String email;
     private Integer emailQuota;
     private boolean emailVerified;
-    private List<String> alias = new ArrayList<>();
-    private List<String> groupPaths = new ArrayList<>();
+    private List<String> alias;
+    private List<String> groupPaths;
     private List<GroupsMetadata> groupsMetadata = new ArrayList<>();
 
     public static OpenIdUser fromTokenResponse(TokenResponse tokenResponse) {
@@ -38,9 +38,15 @@ public class OpenIdUser {
         try { emailQuota = InputUtils.toInteger("" + idTokenPayload.get("emailQuota")); } catch (Exception e) {}
         try { emailVerified = Boolean.TRUE.equals(idTokenPayload.get("email_verified")); } catch (Exception e) {}
         try { alias = (List<String>)idTokenPayload.get("alias"); } catch (Exception e) {}
+        if (alias == null) {
+            alias = new ArrayList<>();
+        }
         Collections.sort(alias);
         // The groups only exist if you have a groups mapper configured.
         try { groupPaths = (List<String>) idTokenPayload.get("groups"); } catch (Exception e) {}
+        if (groupPaths == null) {
+            groupPaths = new ArrayList<>();
+        }
         try {
             // The groups metadata only exists if your groups have an attribute "group_metadata" containing a json string (see GroupsMetadata class)
             // and there is a user attribute mapper which turns these group_metadata into an aggregated multi-valued JSON 'groups_metadata' attribute
@@ -50,7 +56,6 @@ public class OpenIdUser {
             }
             groupsMetadata = Collections.unmodifiableList(groupsMetadata);
         } catch (Exception e) {
-            e.printStackTrace();
             // too bad
         }
     }
