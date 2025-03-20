@@ -17,7 +17,11 @@ This document describes the configuration of ldaplogin itself. Other relevant do
 
 ## Known issues
 
-* Performance isn't optimized at all, especially handling of groups. You'll probably start noticing issues if you get into the 1000s of users.
+* No GUI to edit resources, you have to do this directly on the database.
+* No GUI to delete users, you have to do this directly on the database.
+* No GUI to manage services, they need to be added via environment variables.
+* Service password needs to be supplied in plain text via environment variables.
+* Performance isn't properly optimized. You may start noticing issues if you get into the 1000s of users.
 * Some classes from the ApacheDS project had to be copied and modified because they don't provide the required flexibility/extendability. They can be found in the `services.ldap` package.
 * Some useless warnings have been hidden via the logging configuration because there is no good way to fix them, see [logback.xml](conf/logback.xml).
 
