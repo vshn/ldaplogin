@@ -22,7 +22,7 @@ libraryDependencies += "org.apache.directory.api" % "api-ldap-net-mina" % "2.1.7
 libraryDependencies += "org.apache.directory.api" % "api-ldap-codec-standalone" % "2.1.7"
 
 // OAuth
-libraryDependencies += "com.google.oauth-client" % "google-oauth-client-java6" % "1.36.0"
+libraryDependencies += "com.google.oauth-client" % "google-oauth-client-java6" % "1.39.0"
 libraryDependencies += "com.google.http-client" % "google-http-client-gson" % "1.46.3"
 libraryDependencies += "com.google.oauth-client" % "google-oauth-client-jetty" % "1.36.0"
 
