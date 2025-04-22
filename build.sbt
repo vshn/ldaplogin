@@ -23,7 +23,7 @@ libraryDependencies += "org.apache.directory.api" % "api-ldap-codec-standalone" 
 
 // OAuth
 libraryDependencies += "com.google.oauth-client" % "google-oauth-client-java6" % "1.36.0"
-libraryDependencies += "com.google.http-client" % "google-http-client-gson" % "1.44.2"
+libraryDependencies += "com.google.http-client" % "google-http-client-gson" % "1.46.3"
 libraryDependencies += "com.google.oauth-client" % "google-oauth-client-jetty" % "1.36.0"
 
 // MongoDB/Morphia
