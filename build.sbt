@@ -28,7 +28,7 @@ libraryDependencies += "com.google.oauth-client" % "google-oauth-client-jetty" %
 
 // MongoDB/Morphia
 libraryDependencies += "org.mongodb" % "mongodb-driver-sync" % "4.11.5"
-libraryDependencies += "dev.morphia.morphia" % "morphia-core" % "2.4.14"
+libraryDependencies += "dev.morphia.morphia" % "morphia-core" % "2.5.0"
 
 gzip / includeFilter := "*.css" || "*.js"
 pipelineStages := Seq(digest, gzip)
