@@ -28,7 +28,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Docker build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           push: true
           tags: "ghcr.io/vshn/ldaplogin:${{ github.ref_name }}${{ env.ghcr_latest_tag }}"
